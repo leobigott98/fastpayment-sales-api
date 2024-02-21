@@ -1,3 +1,4 @@
+//import dependencies
 const jwt = require("jsonwebtoken");
 const express = require("express");
 const pool = require("../db");
