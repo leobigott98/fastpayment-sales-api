@@ -27,6 +27,7 @@ const cityRouter = require("./customers/cities.router");
 const parishRouter = require("./customers/parish.router");
 const actividyRouter = require("./customers/activity.router");
 const banksRouter = require("./customers/banks.router");
+const productsRouter = require("./inventory/products.router");
 
 //routes
 app.use('/api/v1/auth/sign-in', signInRouter);
@@ -42,6 +43,7 @@ app.use('/api/v1/listar-parroquias', parishRouter);
 app.use('/api/v1/new-address', addressRouter);
 app.use('/api/v1/listar-actividades', actividyRouter);
 app.use('/api/v1/listar-bancos', banksRouter);
+app.use('/api/v1/products', productsRouter);
 
 
 const port = process.env.PORT || 3001;
