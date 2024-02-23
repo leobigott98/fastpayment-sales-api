@@ -29,6 +29,7 @@ const actividyRouter = require("./customers/activity.router");
 const banksRouter = require("./customers/banks.router");
 const productsRouter = require("./inventory/products.router");
 const serialsRouter = require("./inventory/serials.router");
+const usersRouter = require("./users/users.router");
 
 //routes
 app.use('/api/v1/auth/sign-in', signInRouter);
@@ -46,6 +47,7 @@ app.use('/api/v1/listar-actividades', actividyRouter);
 app.use('/api/v1/listar-bancos', banksRouter);
 app.use('/api/v1/products', productsRouter);
 app.use('/api/v1/seriales', serialsRouter);
+app.use('/api/v1/users', usersRouter);
 
 
 const port = process.env.PORT || 3001;
