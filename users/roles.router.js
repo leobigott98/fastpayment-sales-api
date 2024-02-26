@@ -29,8 +29,32 @@ router.get("/", [auth, admin], async (req, res)=>{
             ok: false, 
             result: 'Not sure what happened :('
         })
+    }  
+});
+
+//Update rol
+router.post("/update", [auth, admin], async(req,res)=>{
+    const promisePool = pool.promise();
+    const {user_id} = req.user;
+    const { v_user_id_1,
+            v_rol_id,
+            v_sell_fee,
+            v_sell_location} = req.body;
+
+    try{
+        const result = await promisePool.query('CALL sp_update_rol(?,?,?,?,?)', [user_id, v_user_id_1, v_rol_id, v_sell_fee, v_sell_location]);
+
+        res.status(200).json({
+            ok: true,
+            result: result[0][0]
+        })
+    }catch(err){
+        res.status(500).send({
+            ok: false, 
+            result: 'Not sure what happened :(',
+            error: err.message
+        })
     }
-    
 });
 
 //export the router
