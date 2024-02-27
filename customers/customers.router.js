@@ -12,7 +12,7 @@ const router = express.Router();
 //Set up the route handlers
 
 
-//Get all customers
+//Get all your customers
 router.get("/", [auth, sales_finance], async (req, res)=>{
     const promisePool = pool.promise();
 
@@ -35,17 +35,19 @@ router.get("/", [auth, sales_finance], async (req, res)=>{
     
 });
 
-//Get one customer
-router.get("/:id", [auth, sales_finance], async (req, res)=>{
+
+//Get ALL customers
+router.get("/all", [auth, sales], async (req, res)=>{
     const promisePool = pool.promise();
 
+    const {user_id} = req.user
+
     try {
-        const {id} = req.params;
-        const result = await promisePool.query('SELECT * FROM clientes WHERE id = ?', [id]);
+        const result = await promisePool.query('CALL sp_all_customer(?)', [user_id]);
 
         res.status(200).json({
             ok: true,
-            result: result[0]
+            result: result[0][0]
         });
         
     } catch (error) {
