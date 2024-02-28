@@ -21,7 +21,7 @@ router.post("/", async(req, res)=>{
         //show success message
         res.status(200).json({
             success: true,
-            result: result[0][0]   
+            result: result   
         });
     } catch(err){
         //catch any errors
