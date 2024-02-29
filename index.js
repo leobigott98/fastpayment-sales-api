@@ -32,6 +32,7 @@ const serialsRouter = require("./inventory/serials.router");
 const usersRouter = require("./users/users.router");
 const rolesRouter = require("./users/roles.router");
 const salesRouter = require("./sales/sales.router");
+const paymentsRouter = require("./sales/payment.router");
 
 //routes
 app.use('/api/v1/auth/sign-in', signInRouter);
@@ -52,7 +53,7 @@ app.use('/api/v1/seriales', serialsRouter);
 app.use('/api/v1/users', usersRouter);
 app.use('/api/v1/roles', rolesRouter);
 app.use('/api/v1/sales', salesRouter);
-
+app.use('/api/v1/payments', paymentsRouter);
 
 const port = process.env.PORT || 3001;
 
