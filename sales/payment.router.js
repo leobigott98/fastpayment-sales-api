@@ -4,7 +4,7 @@ const pool = require("../db");
 
 //import middlewares
 const auth = require("../middlewares/auth");
-const {admin, sales, finance} = require("../middlewares/roles");
+const {admin, sales, finance, sales_finance} = require("../middlewares/roles");
 
 //setup the router for express
 const router = express.Router();
@@ -12,7 +12,7 @@ const router = express.Router();
 //Set up the route handlers
 
 //Get payment options
-router.get("/options", [auth, finance], async (req, res)=>{
+router.get("/options", [auth, sales_finance], async (req, res)=>{
     const promisePool = pool.promise();
     
     try {
@@ -21,6 +21,34 @@ router.get("/options", [auth, finance], async (req, res)=>{
         res.status(200).json({
             ok: true,
             result: result[0]
+        });
+        
+    } catch (error) {
+        res.status(500).send({
+            ok: false, 
+            result: 'Not sure what happened :('
+        })
+    }
+    
+});
+
+//Add new payment
+router.post("", [auth, sales_finance], async (req, res)=>{
+    const promisePool = pool.promise();
+
+    const {user_id} = req.user;
+    const { v_sale_id,
+            v_ops_id,
+            v_bank_id,
+            v_pay_ref,
+            v_pay_amount} = req.body;
+    
+    try {
+        const result = await promisePool.query('CALL sp_register_pay(?,?,?,?,?,?)', [user_id, v_sale_id, v_ops_id, v_bank_id, v_pay_ref, v_pay_amount]);
+
+        res.status(200).json({
+            ok: true,
+            result: result[0][0]
         });
         
     } catch (error) {
