@@ -9,4 +9,14 @@ const pool = mysql.createPool({
     database: 'crm_fastpay',
 });
 
+/* const pool = mysql.createPool({
+    host: '127.0.0.1',
+    port: 3306,
+    user: 'root',
+    password: 'L30n4rd01705',
+    database: 'fastpayment_test',
+}); */
+
+
+
 module.exports = pool;

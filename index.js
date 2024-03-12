@@ -3,6 +3,11 @@ const express = require('express');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const cors = require('cors');
+const session = require('express-session');
+const MySQLStore = require('express-mysql-session')(session)
+const pool = require("./db.js");
+
+const sessionStore = new MySQLStore({},pool);
 
 //setting up express server
 const app = express();
@@ -12,6 +17,12 @@ app.use(helmet());
 app.use(cors());
 app.use(morgan('dev'));
 app.use(express.json());
+app.use(session({
+    secret: 'keyboard cat',
+    resave: false,
+    saveUninitialized: true,
+    cookie: {}
+  }))
 
 //import routes
 const signInRouter = require("./auth/sign-in.router");
@@ -33,6 +44,8 @@ const usersRouter = require("./users/users.router");
 const rolesRouter = require("./users/roles.router");
 const salesRouter = require("./sales/sales.router");
 const paymentsRouter = require("./sales/payment.router");
+const generateCode = require("./auth/generate-code.js");
+const verifyCode = require("./auth/verify-otp.router.js");
 
 //routes
 app.use('/api/v1/auth/sign-in', signInRouter);
@@ -54,6 +67,8 @@ app.use('/api/v1/users', usersRouter);
 app.use('/api/v1/roles', rolesRouter);
 app.use('/api/v1/sales', salesRouter);
 app.use('/api/v1/payments', paymentsRouter);
+app.use('/api/v1/auth/generate-otp', generateCode);
+app.use('/api/v1/auth/verify-otp', verifyCode);
 
 const port = process.env.PORT || 3001;
 
