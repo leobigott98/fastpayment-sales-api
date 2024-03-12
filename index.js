@@ -3,11 +3,11 @@ const express = require('express');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const cors = require('cors');
-const session = require('express-session');
-const MySQLStore = require('express-mysql-session')(session)
-const pool = require("./db.js");
+/* const session = require('express-session'); */
+/* const MySQLStore = require('express-mysql-session')(session)
+const pool = require("./db.js"); */
 
-const sessionStore = new MySQLStore({},pool);
+/* const sessionStore = new MySQLStore({},pool); */
 
 //setting up express server
 const app = express();
@@ -17,12 +17,12 @@ app.use(helmet());
 app.use(cors());
 app.use(morgan('dev'));
 app.use(express.json());
-app.use(session({
+/* app.use(session({
     secret: 'keyboard cat',
     resave: false,
     saveUninitialized: true,
     cookie: {}
-  }))
+  })) */
 
 //import routes
 const signInRouter = require("./auth/sign-in.router");
@@ -69,6 +69,7 @@ app.use('/api/v1/sales', salesRouter);
 app.use('/api/v1/payments', paymentsRouter);
 app.use('/api/v1/auth/generate-otp', generateCode);
 app.use('/api/v1/auth/verify-otp', verifyCode);
+app.use('/api/v1/seriales/asignar-serial', verifyCode);
 
 const port = process.env.PORT || 3001;
 
