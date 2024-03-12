@@ -1,3 +1,4 @@
+require("dotenv").config();
 const nodemailer = require("nodemailer");
 const pool = require("../db");
 const bcrypt = require("bcrypt");
@@ -7,8 +8,8 @@ const transporter = nodemailer.createTransport({
   port: 465,
   secure: true, // Use `true` for port 465, `false` for all other ports
   auth: {
-    user: "l.bigott@fastpayment.com.ve",
-    pass: "Bruno*25",
+    user: process.env.SMTPUSER,
+    pass: process.env.SMTPPASSWORD,
   },
 });
 
