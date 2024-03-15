@@ -39,18 +39,41 @@ router.post("/", [auth, storage], async (req, res)=>{
     
 });
 
-//Create product
+//Assign serial
 router.post("/asignar-serial", [auth, sales], async (req, res)=>{
     const promisePool = pool.promise();
 
     const {user_id} = req.user
     const {
+        v_prod_id,
         v_sale_id,
         v_serial_num
         } = req.body;
 
     try {
-        const result = await promisePool.query('CALL sp_assign_serial(?,?,?)', [user_id, v_sale_id, v_serial_num ]);
+        const result = await promisePool.query('CALL sp_assign_serial(?,?,?,?)', [user_id, v_sale_id, v_prod_id, v_serial_num ]);
+
+        res.status(200).json({
+            ok: true,
+            result: result[0][0]
+        });
+        
+    } catch (error) {
+        res.status(500).send({
+            ok: false, 
+            result: 'Not sure what happened :('
+        })
+    }
+    
+});
+
+//Assign serial
+router.get("/", [auth, sales], async (req, res)=>{
+    const promisePool = pool.promise();
+    const {product_id} = req.body;
+
+    try {
+        const result = await promisePool.query('CALL sp_get_serials(?)', [product_id]);
 
         res.status(200).json({
             ok: true,

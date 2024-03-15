@@ -5,6 +5,7 @@ const pool = require("../db");
 //import middlewares
 const auth = require("../middlewares/auth");
 const {admin, sales, finance, sales_finance} = require("../middlewares/roles");
+const {authenticated, active} = require("../middlewares/sessionCheck.js")
 
 //setup the router for express
 const router = express.Router();

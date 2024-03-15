@@ -8,7 +8,7 @@ const bcrypt = require("bcrypt");
 const router = express.Router();
 
 //sign in a user
-router.post("/", async(req, res)=>{
+router.post("/", express.urlencoded({ extended: false }), async(req, res)=>{
     const promisePool = pool.promise();
     const {email, password} = req.body
     try{
@@ -26,14 +26,30 @@ router.post("/", async(req, res)=>{
             status_id: user[0][0][0].status_id
         }, process.env.PRIVATE_KEY, {expiresIn: "8h"})
 
-        res.status(200).json({
-            success: true,
-            //user: user,
-            token: token,
-            //user_pass: user[0][0][0].user_pass,
-            user_name: user[0][0][0].user_name,
-            user_last: user[0][0][0].user_last
-        });
+        const userInfo = {
+            email: user[0][0][0].user_email,
+            name: user[0][0][0].user_name,
+            lastname: user[0][0][0].user_last
+        }
+
+        req.session.regenerate((err)=>{
+            if(err) throw new Error(err);
+            req.session.user = userInfo;
+            req.session.status = user[0][0][0].status_id;
+            req.session.authenticated = true;
+            req.session.save((err)=>{
+                if(err) throw new Error(err);
+                res.status(200).json({
+                    success: true,
+                    //user: user,
+                    token: token,
+                    //user_pass: user[0][0][0].user_pass,
+                    user_name: user[0][0][0].user_name,
+                    user_last: user[0][0][0].user_last
+                });
+            })
+        })        
+        
     } catch(err){
         console.error(err);
         res.status(401).send({

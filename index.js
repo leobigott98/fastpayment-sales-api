@@ -3,30 +3,43 @@ const express = require('express');
 const helmet = require('helmet');
 const morgan = require('morgan');
 const cors = require('cors');
-/* const session = require('express-session'); */
-/* const MySQLStore = require('express-mysql-session')(session)
-const pool = require("./db.js"); */
+const session = require('express-session');
+const MySQLStore = require('express-mysql-session')(session)
+const pool = require("./db.js");
 
-/* const sessionStore = new MySQLStore({},pool); */
+const sessionStore = new MySQLStore({},pool);
 
 //setting up express server
 const app = express();
 
 //middleware
 app.use(helmet());
-app.use(cors());
+app.use(cors({
+  origin: "http://localhost:3000",
+  methods: ["POST", "PUT", "GET", "OPTIONS", "HEAD"],
+  credentials: true,
+}));
 app.use(morgan('dev'));
 app.use(express.json());
-/* app.use(session({
+app.use(session({
     secret: 'keyboard cat',
     resave: false,
-    saveUninitialized: true,
-    cookie: {}
-  })) */
+    saveUninitialized: false,
+    store: sessionStore,
+    cookie: {
+      maxAge:  24* 60 * 60 * 1000,
+      sameSite: false,
+      //httpOnly: true,
+      httpOnly: false,
+      //sameSite: 'none',
+      secure: false
+    }
+  }))
 
 //import routes
 const signInRouter = require("./auth/sign-in.router");
 const signUpRouter = require("./auth/sign-up.router");
+const signOutRouter = require("./auth/sign-out.router");
 const customersRouter = require("./customers/customers.router");
 const codLocalIdRouter = require("./customers/codlocalid.router");
 const addressRouter = require("./customers/address.router");
@@ -47,10 +60,31 @@ const paymentsRouter = require("./sales/payment.router");
 const generateCode = require("./auth/generate-code.js");
 const verifyCode = require("./auth/verify-otp.router.js");
 
+//middleware
+const authenticated = async (req, res, next)=>{
+  console.log(req.session);
+  if(req.session.authenticated) next()
+  else return res.status(401).send({
+      ok: false, 
+      error: "Not authenticated"
+  });
+}
+const active = (req, res, next)=>{
+  if(req.session.status == 3000) next()
+  else return res.status(403).send({
+      ok: false,
+      error: "Not authorized"
+  })
+}
+
+
 //routes
 app.use('/api/v1/auth/sign-in', signInRouter);
 app.use('/api/v1/auth/sign-up', signUpRouter);
-app.use('/api/v1/customers', customersRouter);
+app.use('/api/v1/auth/sign-out', signOutRouter);
+app.use('/api/v1/customers', 
+[authenticated,active], 
+customersRouter);
 app.use('/api/v1/new-inventory', inventoryRouter);
 app.use('/api/v1/get-codlocalid', codLocalIdRouter);
 app.use('/api/v1/listar-paises', countryRouter);
