@@ -17,12 +17,14 @@ const transporter = nodemailer.createTransport({
 async function main(mail) {
   // send mail with defined transport object
   try {
-    fetch("http://localhost:3001/api/v1/auth/generate-otp").then(
-      async (otp) => {
-        const jsonOtp = await otp.json();
+    await import("./otp.mjs").then(
+      async (result) => {
+        //const jsonOtp = await otp.json();
+        const otp = result.nanoid();
         const promisePool = pool.promise();
         const salt = await bcrypt.genSalt(15);
-        const hashed = await bcrypt.hash(jsonOtp.result, salt);
+        //const hashed = await bcrypt.hash(jsonOtp.result, salt);
+        const hashed = await bcrypt.hash(otp, salt);
         /* await promisePool
           .query("UPDATE t_user otp = ? WHERE email = ?", [
             jsonOtp.result,
@@ -59,7 +61,7 @@ async function main(mail) {
                 subject: "Registro FastPayment", // Subject line
                 //text: "Hello world?", // plain text body
                 html: `<h1>Bienvenido a la Aplicación de Ventas de FastPayment</h1>
-            <p>Para validar su dirección de correo, ingrese la siguiente OTP en la aplicación: <b> ${jsonOtp.result}</b> </p>`, // html body
+            <p>Para validar su dirección de correo, ingrese la siguiente OTP en la aplicación: <b> ${otp}</b> </p>`, // html body
               });
 
               console.log("Message sent: %s", info.messageId);
