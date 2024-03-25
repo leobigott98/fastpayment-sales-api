@@ -20,12 +20,12 @@ router.post("/", async (req, res) => {
     await promisePool
       .query("CALL sp_create_usr(?, ?, ?, ?)", [email, hashed, name, lastname])
       .then(async (result) => {
-        if (result[0][0][0].v_error_sql != null) {
+        if (result[0][0][0].v_error_sql > 0) {
           res.status(500).send({
             success: false,
             result: result[0][0][0],
           });
-          throw new Error("Correo inválido o ya registrado");
+          throw new Error("El correo ya existe");
         } else {
             await sendEmail(email)
             .then(() => {

@@ -5,7 +5,7 @@ const pool = require("../db");
 //set up the express server router
 const router = express.Router();
 
-//sign in a user
+//sign out a user
 router.post("/", async(req, res)=>{
     
     try{
