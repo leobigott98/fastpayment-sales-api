@@ -1,4 +1,5 @@
 //import dependencies
+require("dotenv").config();
 const express = require('express');
 const helmet = require('helmet');
 const morgan = require('morgan');
@@ -15,9 +16,9 @@ const app = express();
 //middleware
 app.use(helmet());
 app.use(cors({
-  origin: "http://localhost:3000",
+  origin: ["http://localhost:3000", "https://fastpayment-salesapp-front.vercel.app"],
   methods: ["POST", "PUT", "GET", "OPTIONS", "HEAD"],
-  credentials: true,
+  credentials: true
 }));
 app.use(morgan('dev'));
 app.use(express.json());
@@ -28,11 +29,11 @@ app.use(session({
     store: sessionStore,
     cookie: {
       maxAge:  24* 60 * 60 * 1000,
-      sameSite: false,
-      //httpOnly: true,
-      httpOnly: false,
-      //sameSite: 'none',
-      secure: false
+      //sameSite: false,
+      httpOnly: true,
+      //httpOnly: false,
+      sameSite: 'none',
+      secure: true
     }
   }))
 
@@ -61,7 +62,7 @@ const generateCode = require("./auth/generate-code.js");
 const verifyCode = require("./auth/verify-otp.router.js");
 
 //middleware
-const authenticated = async (req, res, next)=>{
+/* const authenticated = async (req, res, next)=>{
   console.log(req.session);
   if(req.session.authenticated) next()
   else return res.status(401).send({
@@ -75,7 +76,7 @@ const active = (req, res, next)=>{
       ok: false,
       error: "Not authorized"
   })
-}
+} */
 
 
 //routes
@@ -83,7 +84,7 @@ app.use('/api/v1/auth/sign-in', signInRouter);
 app.use('/api/v1/auth/sign-up', signUpRouter);
 app.use('/api/v1/auth/sign-out', signOutRouter);
 app.use('/api/v1/customers', 
-[authenticated,active], 
+//[authenticated,active], 
 customersRouter);
 app.use('/api/v1/new-inventory', inventoryRouter);
 app.use('/api/v1/get-codlocalid', codLocalIdRouter);
