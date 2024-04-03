@@ -7,7 +7,7 @@ const sendEmail = require("./send-email");
 //set up the express server router
 const router = express.Router();
 
-//sign in a user
+//sign-up in a user
 router.post("/", async (req, res) => {
   const promisePool = pool.promise();
   const { name, lastname, email, password } = req.body;
@@ -20,14 +20,14 @@ router.post("/", async (req, res) => {
     await promisePool
       .query("CALL sp_create_usr(?, ?, ?, ?)", [email, hashed, name, lastname])
       .then(async (result) => {
-        if (result[0][0][0].v_error_sql > 0) {
+        if (result[0][0][0].error_num > 0) {
           res.status(500).send({
-            success: false,
+            success: true,
             result: result[0][0][0],
           });
-          throw new Error("El correo ya existe");
+          throw new Error(result[0][0][0].message);
         } else {
-            await sendEmail(email)
+            await sendEmail(email, otp, '')
             .then(() => {
               //show success message
               res.status(200).json({

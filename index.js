@@ -16,9 +16,10 @@ const app = express();
 //middleware
 app.use(helmet());
 app.use(cors({
-  origin: ["http://localhost:3000", "https://fastpayment-salesapp-front.vercel.app"],
+  origin: ["http://localhost:3000", "https://fastsales.fastpaymentve.com"],
   methods: ["POST", "PUT", "GET", "OPTIONS", "HEAD"],
-  credentials: true
+  credentials: true,
+  //allowedHeaders: ["Cookie", "Set-Cookie"]
 }));
 app.use(morgan('dev'));
 app.use(express.json());
@@ -33,7 +34,8 @@ app.use(session({
       httpOnly: true,
       //httpOnly: false,
       sameSite: 'none',
-      secure: true
+      secure: true,
+      domain: 'fastpaymentve.com'
     }
   }))
 
@@ -60,9 +62,10 @@ const salesRouter = require("./sales/sales.router");
 const paymentsRouter = require("./sales/payment.router");
 const generateCode = require("./auth/generate-code.js");
 const verifyCode = require("./auth/verify-otp.router.js");
+const passwordReset = require("./auth/password-reset.js");
 
 //middleware
-/* const authenticated = async (req, res, next)=>{
+const authenticated = async (req, res, next)=>{
   console.log(req.session);
   if(req.session.authenticated) next()
   else return res.status(401).send({
@@ -76,7 +79,7 @@ const active = (req, res, next)=>{
       ok: false,
       error: "Not authorized"
   })
-} */
+}
 
 
 //routes
@@ -104,7 +107,8 @@ app.use('/api/v1/sales', salesRouter);
 app.use('/api/v1/payments', paymentsRouter);
 app.use('/api/v1/auth/generate-otp', generateCode);
 app.use('/api/v1/auth/verify-otp', verifyCode);
-app.use('/api/v1/seriales/asignar-serial', verifyCode);
+//app.use('/api/v1/seriales/asignar-serial', verifyCode);
+app.use('/api/v1/auth/passwordReset', passwordReset);
 
 const port = process.env.PORT || 3001;
 
