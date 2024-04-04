@@ -22,14 +22,19 @@ router.post("/", express.urlencoded({ extended: false }), async(req, res)=>{
 
         const token = jwt.sign({
             user_id: user[0][0][0].user_id,
+            user_email: user[0][0][0].user_email,
             rol_id: user[0][0][0].rol_id,
             status_id: user[0][0][0].status_id
         }, process.env.PRIVATE_KEY, {expiresIn: "8h"})
 
         const userInfo = {
+            success: true,
+            token: token,
             email: user[0][0][0].user_email,
             name: user[0][0][0].user_name,
-            lastname: user[0][0][0].user_last
+            lastname: user[0][0][0].user_last,
+            role: user[0][0][0].rol_id,
+            status: user[0][0][0].status_id
         }
 
         req.session.regenerate((err)=>{
@@ -39,14 +44,7 @@ router.post("/", express.urlencoded({ extended: false }), async(req, res)=>{
             req.session.authenticated = true;
             req.session.save((err)=>{
                 if(err) throw new Error(err);
-                res.status(200).json({
-                    success: true,
-                    //user: user,
-                    token: token,
-                    //user_pass: user[0][0][0].user_pass,
-                    user_name: user[0][0][0].user_name,
-                    user_last: user[0][0][0].user_last
-                });
+                res.status(200).json(userInfo);
             })
         })        
         

@@ -63,6 +63,7 @@ const paymentsRouter = require("./sales/payment.router");
 const generateCode = require("./auth/generate-code.js");
 const verifyCode = require("./auth/verify-otp.router.js");
 const passwordReset = require("./auth/password-reset.js");
+const checkMyDataRouter = require("./auth/check-my-user.js");
 
 //middleware
 const authenticated = async (req, res, next)=>{
@@ -109,6 +110,7 @@ app.use('/api/v1/auth/generate-otp', generateCode);
 app.use('/api/v1/auth/verify-otp', verifyCode);
 //app.use('/api/v1/seriales/asignar-serial', verifyCode);
 app.use('/api/v1/auth/passwordReset', passwordReset);
+app.use('/api/v1/auth/myData', checkMyDataRouter);
 
 const port = process.env.PORT || 3001;
 

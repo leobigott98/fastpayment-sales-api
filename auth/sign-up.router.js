@@ -27,7 +27,7 @@ router.post("/", async (req, res) => {
           });
           throw new Error(result[0][0][0].message);
         } else {
-            await sendEmail(email, otp, '')
+            await sendEmail(email, 'otp', '')
             .then(() => {
               //show success message
               res.status(200).json({
