@@ -17,11 +17,11 @@ router.get("/", [auth], async(req, res)=>{
         const user = await promisePool.query('SELECT user_email, user_name, user_last, rol_id, status_id FROM t_user WHERE user_id = ?', [user_id]);
 
         const userInfo = {
-            user_email: user[0][0].user_email,
-            user_name: user[0][0].user_name,
-            user_last: user[0][0].user_last,
-            user_role: user[0][0].rol_id,
-            user_status: user[0][0].status_id
+            email: user[0][0].user_email,
+            name: user[0][0].user_name,
+            lastname: user[0][0].user_last,
+            role: user[0][0].rol_id,
+            status: user[0][0].status_id
         }
 
         res.status(200).json(userInfo);      

@@ -12,7 +12,7 @@ router.post("/", async(req, res)=>{
     const {email, code} = req.body
     try{
        
-        const user = await promisePool.query('SELECT * FROM otps WHERE email=(?)', [email]);
+        const user = await promisePool.query('SELECT * FROM otps WHERE email=(?) ORDER BY id DESC LIMIT 1', [email]);
         if(user[0][0] === null) throw new Error ('Invalid credentials!');
         if(Date.now() > user[0][0].expiry) {
             await promisePool.query('DELETE FROM otps WHERE email = (?)', [email]);

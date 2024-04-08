@@ -61,5 +61,28 @@ router.get("/", [auth], async (req, res)=>{
     
 });
 
+// GET products of a sale
+router.post("/sale", [auth], async (req, res)=>{
+    const promisePool = pool.promise();
+    const {sale_id} = req.body;
+
+    try {
+        const result = await promisePool.query('SELECT t_saledt.prod_id, t_saledt.sale_id FROM t_saledt INNER JOIN t_sales ON t_saledt.sale_id = t_sales.sale_id WHERE t_saledt.sale_id = ?', [sale_id]);
+
+        res.status(200).json({
+            ok: true,
+            result: result[0]
+        });
+        
+    } catch (error) {
+        console.log(error.message)
+        res.status(500).send({
+            ok: false, 
+            result: 'Not sure what happened :('
+        })
+    }
+    
+});
+
 //export the router
 module.exports = router;
