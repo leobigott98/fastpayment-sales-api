@@ -7,8 +7,17 @@ const cors = require('cors');
 const session = require('express-session');
 const MySQLStore = require('express-mysql-session')(session)
 const pool = require("./db.js");
+const fs = require('fs')
+const http = require('http')
+const https = require('https')
+const privateKey = fs.readFileSync('./certs/key.pem', 'utf8')
+const certificate = fs.readFileSync('./certs/cert.pem', 'utf8')
 
-const sessionStore = new MySQLStore({},pool);
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+
+const credentials = {key: privateKey, cert: certificate}
+
+const sessionStore = new MySQLStore({},pool); 
 
 //setting up express server
 const app = express();
@@ -16,7 +25,7 @@ const app = express();
 //middleware
 app.use(helmet());
 app.use(cors({
-  origin: ["http://localhost:3000", "https://fastsales.fastpaymentve.com"],
+  origin: ["http://localhost:3000", "https://fastsales.fastpaymentve.com", "https://10.192.3.55:5050/auth/login"],
   methods: ["POST", "PUT", "GET", "OPTIONS", "HEAD"],
   credentials: true,
   //allowedHeaders: ["Cookie", "Set-Cookie"]
@@ -64,9 +73,11 @@ const generateCode = require("./auth/generate-code.js");
 const verifyCode = require("./auth/verify-otp.router.js");
 const passwordReset = require("./auth/password-reset.js");
 const checkMyDataRouter = require("./auth/check-my-user.js");
+const newOTP = require("./auth/new-otp.js");
+const tranred = require("./tranred/tranred.router.js");
 
 //middleware
-const authenticated = async (req, res, next)=>{
+/* const authenticated = async (req, res, next)=>{
   console.log(req.session);
   if(req.session.authenticated) next()
   else return res.status(401).send({
@@ -80,7 +91,7 @@ const active = (req, res, next)=>{
       ok: false,
       error: "Not authorized"
   })
-}
+} */
 
 
 //routes
@@ -111,8 +122,19 @@ app.use('/api/v1/auth/verify-otp', verifyCode);
 //app.use('/api/v1/seriales/asignar-serial', verifyCode);
 app.use('/api/v1/auth/passwordReset', passwordReset);
 app.use('/api/v1/auth/myData', checkMyDataRouter);
+app.use('/api/v1/auth/', newOTP);
+app.use('/api/v1/tranred/', tranred);
 
 const port = process.env.PORT || 3001;
+
+//create server
+/* const httpServer = http.createServer(app);
+const httpsServer = https.createServer(credentials, app);
+
+httpServer.listen(8080);
+httpsServer.listen(8443, ()=>{
+  console.log(`Server is up and listening on port 8443`)
+}); */
 
 app.listen(port, ()=>{
     console.log(`Server is up and listening on port ${port}`)
