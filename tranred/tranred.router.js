@@ -9,6 +9,8 @@ const {admin, sales, finance, sales_finance} = require("../middlewares/roles");
 //set up the express server router
 const router = express.Router();
 
+// login to tranred
+
 router.get("/auth/login", [auth, sales_finance], async(req, res)=>{
     const body = {
         login: process.env.TRANRED_USER,
@@ -37,19 +39,40 @@ router.get("/auth/login", [auth, sales_finance], async(req, res)=>{
     
 });
 
+// create customer in tranred
+
 router.post("/customer/create/", [auth, sales_finance], async(req, res)=>{
 
     const {token} = req.body;
+    const {commerce} = req.body
 
     const body = {
-        commerce: req.body.commerce, 
+        //token: token,
+        commerce: {
+            comerRif: commerce.comerRif,
+            comerTipoPer: commerce.comerTipoPer,
+            idActivityXAfiliado: commerce.idActivityXAfiliado,
+            comerDesc: commerce.comerDesc,
+            comerCuentaBanco: commerce.comerCuentaBanco,
+            locationCommerce: req.body.commerceAddress,
+            locationContact: req.body.contactAddress,
+            locationPos: req.body.POSAddress, 
+            daysOperacion:{
+                Lun: true,
+                Mar: true,
+                Mie: true, 
+                Jue: true, 
+                Vie: true,
+                Sab: true, 
+                Dom: true
+            }
+        },
         contacto: req.body.contacto
     }
 
     const headers = new Headers()
     headers.append('Authorization', `Bearer ${token}`);
     headers.append('Content-Type', 'application/json');
-
 
     try{
         fetch(`${process.env.TRANRED_URL}/commerce/create`, {
@@ -66,12 +89,81 @@ router.post("/customer/create/", [auth, sales_finance], async(req, res)=>{
             }
         })
     }catch(error){
+        console.log(error)
         res.status(400).json({error: error.message})
-    }
-    
-    
+    }   
     
 });
+
+// Get one customer
+router.post('/customer/rif/:id', [auth, sales_finance], async(req, res) =>{
+    const {token} = req.body
+    const {id} = req.params
+
+    try{
+        fetch(`${process.env.TRANRED_URL}/commerce/rif/${id}`,{
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }})
+            .then(async(response)=>{
+                const json = await response.json()
+                if(response.ok){
+                    res.status(200).json(json)
+                }else{
+                    res.status(400).json(json)
+                }
+        })
+    }catch(err){
+        console.log(err)
+        res.status(400).json({error: err.message})
+    }    
+})
+
+// Get all customers
+router.post('/customer/all', [auth, sales_finance], async(req, res) =>{
+    const {token} = req.body
+
+    try{
+        fetch(`${process.env.TRANRED_URL}/commerce/all`,{
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }})
+            .then(async(response)=>{
+                const json = await response.json()
+                if(response.ok){
+                    res.status(200).json(json)
+                }else{
+                    res.status(400).json(json)
+                }
+        })
+    }catch(err){
+        console.log(err)
+        res.status(400).json({error: err.message})
+    }    
+})
+
+// Edit a customer
+router.post('/customer', [auth, sales_finance], async(req, res) =>{
+    const {token} = req.body
+
+    try{
+        fetch(`${process.env.TRANRED_URL}/commerce/all`,{
+            headers: {
+                'Authorization': `Bearer ${token}`
+            }})
+            .then(async(response)=>{
+                const json = await response.json()
+                if(response.ok){
+                    res.status(200).json(json)
+                }else{
+                    res.status(400).json(json)
+                }
+        })
+    }catch(err){
+        console.log(err)
+        res.status(400).json({error: err.message})
+    }    
+})
 
 //export the router
 module.exports = router;
