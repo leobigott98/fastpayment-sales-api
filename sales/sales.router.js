@@ -122,5 +122,38 @@ router.get('/customer/:id', [auth, sales_finance], async(req, res)=>{
     }
 })
 
+// get serial from a sale
+router.get('/serials/:id', [auth, sales_finance], async(req, res)=>{
+    const promisePool = pool.promise();
+
+    const {user_id} = req.user;
+    const {id} = req.params;
+
+    try{
+        const result = await promisePool.query('CALL sp_get_serials_tr(?,?)', [user_id, id])
+
+        if(result[0][0][0].error_num){
+            res.status(400).json({
+                success: false, 
+                result: result[0][0]
+            })
+        }else{
+            res.status(200).json({
+                success: true,
+                result: result[0][0]
+            })
+        }
+
+       
+    }catch(err){
+        res.status(400).json({
+            success: false,
+            error: err,
+            message: err.message
+        })
+    }
+})
+
+
 //export the router
 module.exports = router;
