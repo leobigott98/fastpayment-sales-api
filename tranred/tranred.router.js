@@ -143,14 +143,23 @@ router.post('/customer/all', [auth, sales_finance], async(req, res) =>{
 })
 
 // Edit a customer
-router.post('/customer', [auth, sales_finance], async(req, res) =>{
+router.post('/customer/edit', [auth, sales_finance], async(req, res) =>{
     const {token} = req.body
+    const {comerRif} = req.body
+    const {commerce} = req.body
+
+    const body = {
+        comerRif: comerRif,
+        commerce: commerce
+    }
 
     try{
-        fetch(`${process.env.TRANRED_URL}/commerce/all`,{
+        fetch(`${process.env.TRANRED_URL}/commerce`,{
+            method: 'PUT',
             headers: {
                 'Authorization': `Bearer ${token}`
-            }})
+            },
+            body: JSON.stringify(body)})
             .then(async(response)=>{
                 const json = await response.json()
                 if(response.ok){

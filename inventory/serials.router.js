@@ -67,8 +67,8 @@ router.post("/asignar-serial", [auth, sales], async (req, res)=>{
     
 });
 
-//Assign serial
-router.get("/", [auth, sales], async (req, res)=>{
+//Get all  serials from product
+router.post("/all", [auth, sales], async (req, res)=>{
     const promisePool = pool.promise();
     const {product_id} = req.body;
 

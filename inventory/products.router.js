@@ -67,7 +67,7 @@ router.post("/sale", [auth], async (req, res)=>{
     const {sale_id} = req.body;
 
     try {
-        const result = await promisePool.query('SELECT t_saledt.prod_id, t_saledt.sale_id FROM t_saledt INNER JOIN t_sales ON t_saledt.sale_id = t_sales.sale_id WHERE t_saledt.sale_id = ?', [sale_id]);
+        const result = await promisePool.query(`SELECT concat(t_product.prod_brand, ' ', t_product.prod_model) as name, t_saledt.prod_id, t_saledt.sale_id FROM t_saledt INNER JOIN (t_sales, t_product) ON (t_saledt.sale_id = t_sales.sale_id and t_saledt.prod_id = t_product.prod_id) WHERE t_saledt.sale_id = (?)`, [sale_id]);
 
         res.status(200).json({
             ok: true,
