@@ -174,5 +174,142 @@ router.post('/customer/edit', [auth, sales_finance], async(req, res) =>{
     }    
 })
 
+// Create a terminal
+router.post('/terminal/create', [auth, sales_finance], async(req, res) =>{
+    const {token, comerRif, comerCuentaBanco, prefijo, modelo} = req.body
+
+    const body = {
+        comerRif,
+        comerCuentaBanco,
+        prefijo,
+        modelo
+    }
+
+    try{
+        fetch(`${process.env.TRANRED_URL}/terminal/create`,{
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(body)})
+            .then(async(response)=>{
+                const json = await response.json()
+                if(response.ok){
+                    res.status(200).json(json)
+                }else{
+                    res.status(400).json(json)
+                }
+        })
+    }catch(err){
+        console.log(err)
+        res.status(400).json({error: err.message})
+    }    
+})
+
+// Get a terminal
+router.post('/terminal/:id', [auth, sales_finance], async(req, res) =>{
+    const {token} = req.body;
+    const {id} = req.params;
+
+    try{
+        fetch(`${process.env.TRANRED_URL}/terminal/${id}`,{
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(body)})
+            .then(async(response)=>{
+                const json = await response.json()
+                if(response.ok){
+                    res.status(200).json(json)
+                }else{
+                    res.status(400).json(json)
+                }
+        })
+    }catch(err){
+        console.log(err)
+        res.status(400).json({error: err.message})
+    }    
+})
+
+// Edit Terminal Bank Account
+router.post('/terminal/bank/:id', [auth, sales_finance], async(req, res) =>{
+    const {token} = req.body;
+    const {id} = req.params;
+
+    try{
+        fetch(`${process.env.TRANRED_URL}/terminal/bank/${id}`,{
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(body)})
+            .then(async(response)=>{
+                const json = await response.json()
+                if(response.ok){
+                    res.status(200).json(json)
+                }else{
+                    res.status(400).json(json)
+                }
+        })
+    }catch(err){
+        console.log(err)
+        res.status(400).json({error: err.message})
+    }    
+})
+
+// Change Terminal Status
+router.post('/terminal/status/:id', [auth, sales_finance], async(req, res) =>{
+    const {token} = req.body;
+    const {id} = req.params;
+
+    try{
+        fetch(`${process.env.TRANRED_URL}/terminal/status/${id}`,{
+            method: 'PUT',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(body)})
+            .then(async(response)=>{
+                const json = await response.json()
+                if(response.ok){
+                    res.status(200).json(json)
+                }else{
+                    res.status(400).json(json)
+                }
+        })
+    }catch(err){
+        console.log(err)
+        res.status(400).json({error: err.message})
+    }    
+})
+
+// Get Terminal History
+router.post('/terminal/history/:id', [auth, sales_finance], async(req, res) =>{
+    const {token, dateInt, dateEnd} = req.body;
+    const {id} = req.params;
+
+    try{
+        fetch(`${process.env.TRANRED_URL}/historico/terminal/?terminal=${id}&DateInt=${dateInt}&DateEnd=${dateEnd}`,{
+            method: 'GET',
+            headers: {
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(body)})
+            .then(async(response)=>{
+                const json = await response.json()
+                if(response.ok){
+                    res.status(200).json(json)
+                }else{
+                    res.status(400).json(json)
+                }
+        })
+    }catch(err){
+        console.log(err)
+        res.status(400).json({error: err.message})
+    }    
+})
+
+
 //export the router
 module.exports = router;

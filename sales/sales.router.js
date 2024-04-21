@@ -154,6 +154,23 @@ router.get('/serials/:id', [auth, sales_finance], async(req, res)=>{
     }
 })
 
+// assign account number to a sale
+router.post('/account', [auth, sales_finance], async (req,res)=>{
+    const {user_id} = req.user;
+    const {v_sale_id, v_bank_id, v_acct_number} = req.body;
+
+    try {
+        const promisePool = pool.promise();
+        const response = await promisePool.query('CALL sp_add_account(?,?,?,?)', [user_id,v_sale_id,v_bank_id,v_acct_number]);
+        res.status(200).json(response);
+        
+    } catch (error) {
+        res.status(400).json(response);
+    }
+
+
+})
+
 
 //export the router
 module.exports = router;
