@@ -131,6 +131,7 @@ router.get('/serials/:id', [auth, sales_finance], async(req, res)=>{
 
     try{
         const result = await promisePool.query('CALL sp_get_serials_tr(?,?)', [user_id, id])
+        //res.status(200).json({result: result})
 
         if(result[0][0][0].error_num){
             res.status(400).json({
@@ -157,15 +158,16 @@ router.get('/serials/:id', [auth, sales_finance], async(req, res)=>{
 // assign account number to a sale
 router.post('/account', [auth, sales_finance], async (req,res)=>{
     const {user_id} = req.user;
-    const {v_sale_id, v_bank_id, v_acct_number} = req.body;
+    const {v_sale_id, v_bank_id, v_acct_number, v_serial_num} = req.body;
 
+    console.log(req.body)
     try {
         const promisePool = pool.promise();
-        const response = await promisePool.query('CALL sp_add_account(?,?,?,?)', [user_id,v_sale_id,v_bank_id,v_acct_number]);
-        res.status(200).json(response);
+        const response = await promisePool.query('CALL sp_add_account(?,?,?,?,?)', [user_id, v_sale_id, v_serial_num, v_bank_id, v_acct_number]);
+        res.status(200).json(response[0][0][0]);
         
     } catch (error) {
-        res.status(400).json(response);
+        res.status(400).json(error);
     }
 
 

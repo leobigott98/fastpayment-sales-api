@@ -1,17 +1,23 @@
 //import dependencies
 require("dotenv").config();
 const express = require("express");
+const {saveToSQLite, deleteTokens, getToken} = require("../db/db")
 
 //import middlewares
 const auth = require("../middlewares/auth");
 const {admin, sales, finance, sales_finance} = require("../middlewares/roles");
+const {createCustomer, getOneCustomer, getAllCustomers, editCustomer, createTerminal, getTerminal, createTranredCustomer} = require("./controllers");
+//const {tranredToken} = require("../middlewares/tranredToken")
+
+//import controllers
+//const tranredLogin = require("./controllers");
 
 //set up the express server router
 const router = express.Router();
 
 // login to tranred
 
-router.get("/auth/login", [auth, sales_finance], async(req, res)=>{
+router.get("/auth/login", [auth, sales_finance], async(req,res)=>{
     const body = {
         login: process.env.TRANRED_USER,
         password: process.env.TRANRED_PASSWORD
@@ -26,24 +32,30 @@ router.get("/auth/login", [auth, sales_finance], async(req, res)=>{
             body: JSON.stringify(body)
         })
         .then(async(result)=>{
+            const json = await result.json()
             if(result.ok){
-                const json = await result.json()
-                res.status(200).json(json);
+                deleteTokens();
+                saveToSQLite(json.access_token, Date.now().toString())
+                res.status(200).json(json)
+            }else{
+                res.status(400).json(json)
             }
         })
     }catch(error){
         res.status(400).json(error)
-    }
-    
-    
-    
+    }    
 });
 
 // create customer in tranred
 
-router.post("/customer/create/", [auth, sales_finance], async(req, res)=>{
+router.post("/customer/create", [auth, sales_finance], createCustomer)
 
-    const {token} = req.body;
+router.post("/test/customer/create", createTranredCustomer)
+
+/* router.post("/customer/create/", [auth, sales_finance], async(req, res)=>{
+
+    getToken()
+
     const {commerce} = req.body
 
     const body = {
@@ -84,7 +96,8 @@ router.post("/customer/create/", [auth, sales_finance], async(req, res)=>{
             const json = await result.json()
             if(result.ok){
                 res.status(200).json(json);
-            }else{
+            }
+            else {
                 res.status(400).json(json);
             }
         })
@@ -93,10 +106,13 @@ router.post("/customer/create/", [auth, sales_finance], async(req, res)=>{
         res.status(400).json({error: error.message})
     }   
     
-});
+}); */
 
 // Get one customer
-router.post('/customer/rif/:id', [auth, sales_finance], async(req, res) =>{
+router.post('/customer/rif/:id', [auth, sales_finance], getOneCustomer)
+
+
+/* router.post('/customer/rif/:id', [auth, sales_finance], async(req, res) =>{
     const {token} = req.body
     const {id} = req.params
 
@@ -117,33 +133,42 @@ router.post('/customer/rif/:id', [auth, sales_finance], async(req, res) =>{
         console.log(err)
         res.status(400).json({error: err.message})
     }    
-})
+}) */
 
 // Get all customers
-router.post('/customer/all', [auth, sales_finance], async(req, res) =>{
+router.post('/customer/all', [auth, sales_finance], getAllCustomers)
+
+/* router.post('/customer/all', [auth, sales_finance], async(req, res) =>{
     const {token} = req.body
-
-    try{
-        fetch(`${process.env.TRANRED_URL}/commerce/all`,{
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }})
-            .then(async(response)=>{
-                const json = await response.json()
-                if(response.ok){
-                    res.status(200).json(json)
-                }else{
-                    res.status(400).json(json)
-                }
-        })
-    }catch(err){
-        console.log(err)
-        res.status(400).json({error: err.message})
-    }    
+    //res.status(200).json(token)
+    if(!token){
+        res.status(401).json('no token')
+    }else{
+        try{
+            fetch(`${process.env.TRANRED_URL}/commerce/all`,{
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }})
+                .then(async(response)=>{
+                    const json = await response.json()
+                    if(response.ok){
+                        res.status(200).json(json)
+                    }else{
+                        res.status(400).json(json)
+                    }
+            })
+        }catch(err){
+            console.log(err)
+            res.status(400).json({error: err.message})
+        }    
+    }
+     
 })
-
+ */
 // Edit a customer
-router.post('/customer/edit', [auth, sales_finance], async(req, res) =>{
+router.post('/customer/edit', [auth, sales_finance], editCustomer)
+
+/* router.post('/customer/edit', [auth, sales_finance], async(req, res) =>{
     const {token} = req.body
     const {comerRif} = req.body
     const {commerce} = req.body
@@ -173,23 +198,27 @@ router.post('/customer/edit', [auth, sales_finance], async(req, res) =>{
         res.status(400).json({error: err.message})
     }    
 })
-
+ */
 // Create a terminal
-router.post('/terminal/create', [auth, sales_finance], async(req, res) =>{
-    const {token, comerRif, comerCuentaBanco, prefijo, modelo} = req.body
+router.post('/terminal/create', [auth, sales_finance], createTerminal)
+
+/* router.post('/terminal/create', [auth, sales_finance], async(req, res) =>{
+    const {token, comerRif, comerCuentaBanco, prefijo, modelo, serial} = req.body
 
     const body = {
         comerRif,
-        comerCuentaBanco,
         prefijo,
-        modelo
+        modelo,
+        serial,
+        comerCuentaBanco
     }
 
     try{
         fetch(`${process.env.TRANRED_URL}/terminal/create`,{
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${token}`
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
             },
             body: JSON.stringify(body)})
             .then(async(response)=>{
@@ -204,10 +233,12 @@ router.post('/terminal/create', [auth, sales_finance], async(req, res) =>{
         console.log(err)
         res.status(400).json({error: err.message})
     }    
-})
+}) */
 
 // Get a terminal
-router.post('/terminal/:id', [auth, sales_finance], async(req, res) =>{
+router.post('/terminal/:id', [auth, sales_finance], getTerminal)
+
+/* router.post('/terminal/:id', [auth, sales_finance], async(req, res) =>{
     const {token} = req.body;
     const {id} = req.params;
 
@@ -230,7 +261,7 @@ router.post('/terminal/:id', [auth, sales_finance], async(req, res) =>{
         console.log(err)
         res.status(400).json({error: err.message})
     }    
-})
+}) */
 
 // Edit Terminal Bank Account
 router.post('/terminal/bank/:id', [auth, sales_finance], async(req, res) =>{
