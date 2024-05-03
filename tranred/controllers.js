@@ -1,9 +1,14 @@
 const express = require("express");
 const router = express.Router();
-const { saveToSQLite, deleteTokens } = require("../db/db");
+const {
+  saveTokenToSQLite,
+  deleteTokens,
+  savePlansToSQLite,
+} = require("../sqlite/db");
 const sqlite3 = require("sqlite3").verbose();
 const sql = `SELECT * FROM tranred_tokens ORDER BY rowid DESC LIMIT 1`;
 const jwt = require("jsonwebtoken");
+const pool = require("../db");
 
 //Login to Tranred function
 const tranredLogin = (success, callback) => {
@@ -36,9 +41,10 @@ const tranredLogin = (success, callback) => {
       if (result.ok) {
         const json = await result.json();
         //deleteTokens();
-        saveToSQLite(json.access_token, Date.now().toString(), callback);
+        saveTokenToSQLite(json.access_token, Date.now().toString(), callback);
       } else {
-        return (success = false);
+        success = false;
+        return success;
       }
     });
   } catch (error) {
@@ -63,13 +69,11 @@ const checkToken = (timestamp) => {
 const createTranredCustomer = async (req, res) => {
   const bearerToken = req.header("Authorization");
   if (!bearerToken) {
-    return res
-      .status(401)
-      .json({
-        error: "Unauthorized",
-        statusCode: 401,
-        message: "No token provided",
-      });
+    return res.status(401).json({
+      error: "Unauthorized",
+      statusCode: 401,
+      message: "No token provided",
+    });
   }
   try {
     const token = bearerToken.split(" ")[1];
@@ -81,19 +85,50 @@ const createTranredCustomer = async (req, res) => {
     }
   } catch (err) {
     console.log(err.message);
-    return res
-      .status(401)
-      .json({
-        error: "Unauthorized",
-        statusCode: 401,
-        message: "Invalid token",
-      });
+    return res.status(401).json({
+      error: "Unauthorized",
+      statusCode: 401,
+      message: "Invalid token",
+    });
+  }
+};
+
+// Update customer in DB
+const updateCustomer = async (req, res) => {
+  const { commerce } = req.body;
+  const promisePool = pool.promise();
+  const tzoffset = new Date().getTimezoneOffset() * 60000;
+  const current = new Date(Date.now() - tzoffset);
+  const timeString = current
+    .toISOString()
+    .slice(0, current.toISOString().indexOf("T"))
+    .concat(
+      " ",
+      current
+        .toISOString()
+        .slice(
+          current.toISOString().indexOf("T") + 1,
+          current.toISOString().indexOf(".")
+        )
+    );
+  const RIF = commerce.comerRif.substring(1);
+  try {
+    const dbResponse = await promisePool.query(
+      "UPDATE t_customer SET cusm_tranred = ?, cusm_dupdate = ? WHERE cusm_ndoc = ?",
+      [1, timeString, RIF]
+    );
+    if (dbResponse[0].affectedRows == 1) {
+      return true;
+    } else throw new Error("Ha ocurrido un error");
+  } catch (err) {
+    console.log(err.message);
+    return false;
   }
 };
 
 //Create Tranred Customer
 const createCustomer = async (req, res) => {
-  const db = new sqlite3.Database("./db/tranred.db");
+  const db = new sqlite3.Database("./sqlite/tranred.db");
   console.log("attempting to create customer");
   let success = true;
   const { commerce } = req.body;
@@ -123,11 +158,12 @@ const createCustomer = async (req, res) => {
   /* const token = jwt.sign({test: 'this is a test'}, process.env.PRIVATE_KEY, {expiresIn: '1 m'})
   console.log(token) */
 
+  console.log(body);
+
   db.get(sql, function (err, row) {
     if (err) {
       return console.log(err.message);
     }
-    //console.log(row)
     try {
       /* fetch(`http://localhost:3001/api/v1/tranred/test/customer/create`, {
         method: 'POST',
@@ -172,7 +208,15 @@ const createCustomer = async (req, res) => {
       }).then(async (result) => {
         const json = await result.json();
         if (result.ok) {
-          return res.status(200).json(json);
+          if (updateCustomer(req, res)) {
+            return res.status(200).json(json);
+          } else {
+            return res
+              .status(500)
+              .json({
+                message: "Ha ocurrido un error actualizando el registro.",
+              });
+          }
         } else if (json.statusCode == 401) {
           console.log("had to perform login");
           if (success) {
@@ -180,7 +224,9 @@ const createCustomer = async (req, res) => {
               return createCustomer(req, res);
             });
           } else
-            return res.status(400).json({ statusCode: 400, message: "Something happened" });
+            return res
+              .status(400)
+              .json({ statusCode: 400, message: "Something happened" });
         } else {
           return res.status(400).json(json);
         }
@@ -195,6 +241,7 @@ const createCustomer = async (req, res) => {
 
 //Get one Tranred Customer
 const getOneCustomer = async (req, res) => {
+  const db = new sqlite3.Database("./sqlite/tranred.db");
   const { id } = req.params;
   let success = true;
   db.get(sql, function (err, row) {
@@ -205,7 +252,7 @@ const getOneCustomer = async (req, res) => {
     try {
       fetch(`${process.env.TRANRED_URL}/commerce/rif/${id}`, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${row.token}`,
         },
       }).then(async (response) => {
         const json = await response.json();
@@ -218,12 +265,13 @@ const getOneCustomer = async (req, res) => {
               return getOneCustomer(req, res);
             });
           } else
-            return res.status(400).json({ statusCode: 400, message: "Something happened" });
+            return res
+              .status(400)
+              .json({ statusCode: 400, message: "Something happened" });
         } else {
           return res.status(400).json(json);
         }
       });
-      
     } catch (err) {
       console.log(err);
       res.status(400).json({ error: err.message });
@@ -234,24 +282,35 @@ const getOneCustomer = async (req, res) => {
 
 //Get All Tranred Customers
 const getAllCustomers = async (req, res) => {
+  const db = new sqlite3.Database("./sqlite/tranred.db");
+  let success = true;
   db.get(sql, function (err, row) {
     if (err) {
       return console.log(err.message);
     }
     try {
-      res.status(200).json({ body: "", token: row.token });
-      /* fetch(`${process.env.TRANRED_URL}/commerce/all`, {
+      fetch(`${process.env.TRANRED_URL}/commerce/all`, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${row.token}`,
         },
       }).then(async (response) => {
         const json = await response.json();
         if (response.ok) {
           res.status(200).json(json);
+        } else if (json.statusCode == 401) {
+          console.log("had to perform login");
+          if (success) {
+            tranredLogin(success, () => {
+              return getAllCustomers(req, res);
+            });
+          } else
+            return res
+              .status(400)
+              .json({ statusCode: 400, message: "Something happened" });
         } else {
-          res.status(400).json(json);
+          return res.status(400).json(json);
         }
-      }); */
+      });
     } catch (err) {
       console.log(err);
       res.status(400).json({ error: err.message });
@@ -262,7 +321,8 @@ const getAllCustomers = async (req, res) => {
 
 //Edit Tranred Customer
 const editCustomer = async (req, res) => {
-  //const {token} = req.body
+  const db = new sqlite3.Database("./sqlite/tranred.db");
+  let success = true;
   const { comerRif } = req.body;
   const { commerce } = req.body;
 
@@ -276,21 +336,30 @@ const editCustomer = async (req, res) => {
     }
 
     try {
-      res.status(200).json({ body: body, token: row.token });
-      /* fetch(`${process.env.TRANRED_URL}/commerce`, {
-      method: "PUT",
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-      body: JSON.stringify(body),
-    }).then(async (response) => {
-      const json = await response.json();
-      if (response.ok) {
-        res.status(200).json(json);
-      } else {
-        res.status(400).json(json);
-      }
-    }); */
+      fetch(`${process.env.TRANRED_URL}/commerce`, {
+        method: "PUT",
+        headers: {
+          Authorization: `Bearer ${row.token}`,
+        },
+        body: JSON.stringify(body),
+      }).then(async (response) => {
+        const json = await response.json();
+        if (response.ok) {
+          res.status(200).json(json);
+        } else if (json.statusCode == 401) {
+          console.log("had to perform login");
+          if (success) {
+            tranredLogin(success, () => {
+              return editCustomer(req, res);
+            });
+          } else
+            return res
+              .status(400)
+              .json({ statusCode: 400, message: "Something happened" });
+        } else {
+          return res.status(400).json(json);
+        }
+      });
     } catch (err) {
       console.log(err);
       res.status(400).json({ error: err.message });
@@ -299,7 +368,10 @@ const editCustomer = async (req, res) => {
   db.close();
 };
 
+//Create Tranred Terminal
 const createTerminal = async (req, res) => {
+  const db = new sqlite3.Database("./sqlite/tranred.db");
+  let success = true;
   const { comerRif, comerCuentaBanco, prefijo, modelo, serial } = req.body;
 
   const body = {
@@ -315,22 +387,32 @@ const createTerminal = async (req, res) => {
     }
 
     try {
-      res.status(200).json({ body: body, token: row.token });
-      /* fetch(`${process.env.TRANRED_URL}/terminal/create`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${token}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    }).then(async (response) => {
-      const json = await response.json();
-      if (response.ok) {
-        res.status(200).json(json);
-      } else {
-        res.status(400).json(json);
-      }
-    }); */
+      fetch(`${process.env.TRANRED_URL}/terminal/create`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${row.token}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(body),
+      }).then(async (response) => {
+        const json = await response.json();
+        if (response.ok) {
+          savePlansToSQLite;
+          res.status(200).json(json);
+        } else if (json.statusCode == 401) {
+          console.log("had to perform login");
+          if (success) {
+            tranredLogin(success, () => {
+              return createTerminal(req, res);
+            });
+          } else
+            return res
+              .status(400)
+              .json({ statusCode: 400, message: "Something happened" });
+        } else {
+          return res.status(400).json(json);
+        }
+      });
     } catch (err) {
       console.log(err);
       res.status(400).json({ error: err.message });
@@ -341,6 +423,8 @@ const createTerminal = async (req, res) => {
 
 //Get one terminal
 const getTerminal = async (req, res) => {
+  const db = new sqlite3.Database("./sqlite/tranred.db");
+  let success = true;
   const { id } = req.params;
 
   db.get(sql, function (err, row) {
@@ -349,25 +433,93 @@ const getTerminal = async (req, res) => {
     }
 
     try {
-      res.status(200).json({ body: body, token: row.token });
-      /* fetch(`${process.env.TRANRED_URL}/terminal/${id}`, {
+      fetch(`${process.env.TRANRED_URL}/terminal/${id}`, {
         method: "GET",
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: `Bearer ${row.token}`,
         },
         body: JSON.stringify(body),
       }).then(async (response) => {
         const json = await response.json();
         if (response.ok) {
           res.status(200).json(json);
+        } else if (json.statusCode == 401) {
+          console.log("had to perform login");
+          if (success) {
+            tranredLogin(success, () => {
+              return getOneCustomer(req, res);
+            });
+          } else
+            return res
+              .status(400)
+              .json({ statusCode: 400, message: "Something happened" });
         } else {
-          res.status(400).json(json);
+          return res.status(400).json(json);
         }
-      }); */
+      });
     } catch (err) {
       console.log(err);
       res.status(400).json({ error: err.message });
     }
+  });
+  db.close();
+};
+
+// Update plans
+const updatePlans = async (req, res) => {
+  const db = new sqlite3.Database("./sqlite/tranred.db");
+  let success = true;
+  db.get(sql, function (err, row) {
+    if (err) {
+      res.status(400).json({mstatusCode: 400, message: err.message});
+    }
+
+    try {
+      fetch(`${process.env.TRANRED_URL}/terminal/planes/all`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${row.token}`,
+        },
+      }).then(async (response) => {
+        const json = await response.json();
+        if (response.ok) {
+          savePlansToSQLite(json.terminales, () => {
+            res.status(200).json(json);
+          });
+        } else if (json.statusCode == 401) {
+          console.log("had to perform login");
+          if (success) {
+            tranredLogin(success, () => {
+              return getOneCustomer(req, res);
+            });
+          } else
+            return res
+              .status(400)
+              .json({ statusCode: 400, message: "Something happened" });
+        } else {
+          return res.status(400).json(json);
+        }
+      });
+    } catch (err) {
+      console.log(err);
+      res.status(400).json({ error: err.message });
+    }
+  });
+  db.close();
+};
+
+// Get plans
+const getPlans = async (req, res) => {
+  const db = new sqlite3.Database("./sqlite/tranred.db");
+  db.all("SELECT * FROM tranred_plans", function (err, rows) {
+    if (err) {
+      res.status(400).json({ statusCode: 400, message: err.message });
+    } else{
+      res.status(200).json({
+        plans: rows,
+      });
+    }
+    
   });
   db.close();
 };
@@ -380,4 +532,6 @@ module.exports = {
   createTerminal,
   getTerminal,
   createTranredCustomer,
+  getPlans,
+  updatePlans,
 };

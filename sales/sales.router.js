@@ -26,6 +26,7 @@ router.get("/", [auth, sales], async (req, res)=>{
         });
         
     } catch (error) {
+        console.log(error)
         res.status(500).send({
             ok: false, 
             result: 'Not sure what happened :('

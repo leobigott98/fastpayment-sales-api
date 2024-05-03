@@ -1,12 +1,13 @@
 //import dependencies
 require("dotenv").config();
 const express = require("express");
-const {saveToSQLite, deleteTokens, getToken} = require("../db/db")
+const {saveToSQLite, deleteTokens, getToken} = require("../sqlite/db")
+const pool = require("../db")
 
 //import middlewares
 const auth = require("../middlewares/auth");
 const {admin, sales, finance, sales_finance} = require("../middlewares/roles");
-const {createCustomer, getOneCustomer, getAllCustomers, editCustomer, createTerminal, getTerminal, createTranredCustomer} = require("./controllers");
+const {createCustomer, getOneCustomer, getAllCustomers, editCustomer, createTerminal, getTerminal, createTranredCustomer, updatePlans, getPlans} = require("./controllers");
 //const {tranredToken} = require("../middlewares/tranredToken")
 
 //import controllers
@@ -14,6 +15,26 @@ const {createCustomer, getOneCustomer, getAllCustomers, editCustomer, createTerm
 
 //set up the express server router
 const router = express.Router();
+
+// test update on mysql
+router.post("/test/update", async(req,res)=>{
+    const {commerce} = req.body
+    const promisePool = pool.promise();
+    const tzoffset = (new Date()).getTimezoneOffset() * 60000;
+    const current = new Date(Date.now() - tzoffset);
+    const timeString = current.toISOString().slice(0,current.toISOString().indexOf("T")).concat(" ", current.toISOString().slice((current.toISOString().indexOf("T")+1),current.toISOString().indexOf(".")));
+    const RIF = commerce.comerRif.substring(1);
+    try{
+        const dbResponse = await promisePool.query('UPDATE t_customer SET cusm_tranred = ?, cusm_dupdate = ? WHERE cusm_ndoc = ?', [1, timeString, RIF]);
+        if(dbResponse[0].affectedRows == 1){
+            res.status(200).json(dbResponse)
+        }else throw new Error('Ha ocurrido un error')
+        
+    }catch(err){
+        res.status(400).json({statusCode: 400, message: err.message})
+    }
+    
+})
 
 // login to tranred
 
@@ -109,7 +130,7 @@ router.post("/test/customer/create", createTranredCustomer)
 }); */
 
 // Get one customer
-router.post('/customer/rif/:id', [auth, sales_finance], getOneCustomer)
+router.get('/customer/rif/:id', [auth, sales_finance], getOneCustomer)
 
 
 /* router.post('/customer/rif/:id', [auth, sales_finance], async(req, res) =>{
@@ -136,7 +157,7 @@ router.post('/customer/rif/:id', [auth, sales_finance], getOneCustomer)
 }) */
 
 // Get all customers
-router.post('/customer/all', [auth, sales_finance], getAllCustomers)
+router.get('/customer/all', [auth, sales_finance], getAllCustomers)
 
 /* router.post('/customer/all', [auth, sales_finance], async(req, res) =>{
     const {token} = req.body
@@ -236,7 +257,7 @@ router.post('/terminal/create', [auth, sales_finance], createTerminal)
 }) */
 
 // Get a terminal
-router.post('/terminal/:id', [auth, sales_finance], getTerminal)
+router.get('/terminal/:id', [auth, sales_finance], getTerminal)
 
 /* router.post('/terminal/:id', [auth, sales_finance], async(req, res) =>{
     const {token} = req.body;
@@ -340,6 +361,12 @@ router.post('/terminal/history/:id', [auth, sales_finance], async(req, res) =>{
         res.status(400).json({error: err.message})
     }    
 })
+
+// Update Plans from Tranred
+router.get('/terminal/plans/update', [auth, sales_finance], updatePlans)
+
+// Get Plans from SQLite
+router.get('/terminal/plans/all', [auth, sales_finance], getPlans)
 
 
 //export the router
