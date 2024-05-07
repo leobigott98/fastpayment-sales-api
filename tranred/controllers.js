@@ -372,14 +372,16 @@ const editCustomer = async (req, res) => {
 const createTerminal = async (req, res) => {
   const db = new sqlite3.Database("./sqlite/tranred.db");
   let success = true;
-  const { comerRif, comerCuentaBanco, prefijo, modelo, serial } = req.body;
+  const { comerRif, comerCuentaBanco, prefijo, modelo, serial, plan, comerCantPost } = req.body;
 
   const body = {
     comerRif,
+    comerCuentaBanco,
     prefijo,
+    comerCantPost,
     modelo,
     serial,
-    comerCuentaBanco,
+    plan
   };
   db.get(sql, function (err, row) {
     if (err) {
@@ -465,6 +467,147 @@ const getTerminal = async (req, res) => {
   db.close();
 };
 
+// Update Terminal
+const updateTerminal = async(req, res)=>{
+  const db = new sqlite3.Database("./sqlite/tranred.db");
+  let success = true;
+  const body = req.body;
+
+  db.get(sql, function (err, row) {
+    if (err) {
+      return console.log(err.message);
+    }
+
+    try {
+      fetch(`${process.env.TRANRED_URL}/terminal/update`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${row.token}`,
+          "Content-Type": "application/json" 
+        },
+        body: JSON.stringify(body),
+      }).then(async (response) => {
+        const json = await response.json();
+        if (response.ok) {
+          res.status(200).json(json);
+        } else if (json.statusCode == 401) {
+          console.log("had to perform login");
+          if (success) {
+            tranredLogin(success, () => {
+              return getOneCustomer(req, res);
+            });
+          } else
+            return res
+              .status(400)
+              .json({ statusCode: 400, message: "Something happened" });
+        } else {
+          return res.status(400).json(json);
+        }
+      });
+    } catch (err) {
+      console.log(err);
+      res.status(400).json({ error: err.message });
+    }
+  });
+  db.close();
+}
+
+// Get Terminals' quota
+const getCuotas = async(req, res)=>{
+  const db = new sqlite3.Database("./sqlite/tranred.db");
+  let success = true;
+  const {terminal, planId, startDate, endDate} = req.params;
+ 
+  db.get(sql, function (err, row) {
+    if (err) {
+      return console.log(err.message);
+    }
+
+    try {
+      fetch(`${process.env.TRANRED_URL}/terminal/cuotasAnular/${terminal}/${planId}/${startDate}/${endDate}`, {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${row.token}`,
+        },
+      }).then(async (response) => {
+        const json = await response.json();
+        if (response.ok) {
+          res.status(200).json(json);
+        } else if (json.statusCode == 401) {
+          console.log("had to perform login");
+          if (success) {
+            tranredLogin(success, () => {
+              return getOneCustomer(req, res);
+            });
+          } else
+            return res
+              .status(400)
+              .json({ statusCode: 400, message: "Something happened" });
+        } else {
+          return res.status(400).json(json);
+        }
+      });
+    } catch (err) {
+      console.log(err);
+      res.status(400).json({ error: err.message });
+    }
+  });
+  db.close();
+}
+
+// Cancel quota 
+const cancelCuota = async(req, res)=>{
+  const db = new sqlite3.Database("./sqlite/tranred.db");
+  let success = true;
+  const {terminal, startDate, endDate, planId, personResponsible, comments} = req.body;
+  const body = {
+    terminal,
+    fechaInicio: startDate,
+    fechaFin: endDate,
+    tipoPlan: planId,
+    responsable: personResponsible,
+    observaciones: comments
+  }
+ 
+  db.get(sql, function (err, row) {
+    if (err) {
+      return console.log(err.message);
+    }
+
+    try {
+      fetch(`${process.env.TRANRED_URL}/terminal/AnularCuotas}`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${row.token}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify(body)
+      }).then(async (response) => {
+        const json = await response.json();
+        if (response.ok) {
+          res.status(200).json(json);
+        } else if (json.statusCode == 401) {
+          console.log("had to perform login");
+          if (success) {
+            tranredLogin(success, () => {
+              return getOneCustomer(req, res);
+            });
+          } else
+            return res
+              .status(400)
+              .json({ statusCode: 400, message: "Something happened" });
+        } else {
+          return res.status(400).json(json);
+        }
+      });
+    } catch (err) {
+      console.log(err);
+      res.status(400).json({ error: err.message });
+    }
+  });
+  db.close();
+}
+
 // Update plans
 const updatePlans = async (req, res) => {
   const db = new sqlite3.Database("./sqlite/tranred.db");
@@ -516,13 +659,15 @@ const getPlans = async (req, res) => {
       res.status(400).json({ statusCode: 400, message: err.message });
     } else{
       res.status(200).json({
-        plans: rows,
+        result: rows
       });
     }
     
   });
   db.close();
 };
+
+// 
 
 module.exports = {
   createCustomer,
@@ -534,4 +679,7 @@ module.exports = {
   createTranredCustomer,
   getPlans,
   updatePlans,
+  cancelCuota,
+  getCuotas,
+  updateTerminal
 };

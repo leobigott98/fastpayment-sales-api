@@ -73,188 +73,17 @@ router.post("/customer/create", [auth, sales_finance], createCustomer)
 
 router.post("/test/customer/create", createTranredCustomer)
 
-/* router.post("/customer/create/", [auth, sales_finance], async(req, res)=>{
-
-    getToken()
-
-    const {commerce} = req.body
-
-    const body = {
-        //token: token,
-        commerce: {
-            comerRif: commerce.comerRif,
-            comerTipoPer: commerce.comerTipoPer,
-            idActivityXAfiliado: commerce.idActivityXAfiliado,
-            comerDesc: commerce.comerDesc,
-            comerCuentaBanco: commerce.comerCuentaBanco,
-            locationCommerce: req.body.commerceAddress,
-            locationContact: req.body.contactAddress,
-            locationPos: req.body.POSAddress, 
-            daysOperacion:{
-                Lun: true,
-                Mar: true,
-                Mie: true, 
-                Jue: true, 
-                Vie: true,
-                Sab: true, 
-                Dom: true
-            }
-        },
-        contacto: req.body.contacto
-    }
-
-    const headers = new Headers()
-    headers.append('Authorization', `Bearer ${token}`);
-    headers.append('Content-Type', 'application/json');
-
-    try{
-        fetch(`${process.env.TRANRED_URL}/commerce/create`, {
-            method: 'POST',
-            headers: headers,
-            body: JSON.stringify(body)
-        })
-        .then(async(result)=>{
-            const json = await result.json()
-            if(result.ok){
-                res.status(200).json(json);
-            }
-            else {
-                res.status(400).json(json);
-            }
-        })
-    }catch(error){
-        console.log(error)
-        res.status(400).json({error: error.message})
-    }   
-    
-}); */
-
 // Get one customer
 router.get('/customer/rif/:id', [auth, sales_finance], getOneCustomer)
-
-
-/* router.post('/customer/rif/:id', [auth, sales_finance], async(req, res) =>{
-    const {token} = req.body
-    const {id} = req.params
-
-    try{
-        fetch(`${process.env.TRANRED_URL}/commerce/rif/${id}`,{
-            headers: {
-                'Authorization': `Bearer ${token}`
-            }})
-            .then(async(response)=>{
-                const json = await response.json()
-                if(response.ok){
-                    res.status(200).json(json)
-                }else{
-                    res.status(400).json(json)
-                }
-        })
-    }catch(err){
-        console.log(err)
-        res.status(400).json({error: err.message})
-    }    
-}) */
 
 // Get all customers
 router.get('/customer/all', [auth, sales_finance], getAllCustomers)
 
-/* router.post('/customer/all', [auth, sales_finance], async(req, res) =>{
-    const {token} = req.body
-    //res.status(200).json(token)
-    if(!token){
-        res.status(401).json('no token')
-    }else{
-        try{
-            fetch(`${process.env.TRANRED_URL}/commerce/all`,{
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }})
-                .then(async(response)=>{
-                    const json = await response.json()
-                    if(response.ok){
-                        res.status(200).json(json)
-                    }else{
-                        res.status(400).json(json)
-                    }
-            })
-        }catch(err){
-            console.log(err)
-            res.status(400).json({error: err.message})
-        }    
-    }
-     
-})
- */
 // Edit a customer
 router.post('/customer/edit', [auth, sales_finance], editCustomer)
 
-/* router.post('/customer/edit', [auth, sales_finance], async(req, res) =>{
-    const {token} = req.body
-    const {comerRif} = req.body
-    const {commerce} = req.body
-
-    const body = {
-        comerRif: comerRif,
-        commerce: commerce
-    }
-
-    try{
-        fetch(`${process.env.TRANRED_URL}/commerce`,{
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify(body)})
-            .then(async(response)=>{
-                const json = await response.json()
-                if(response.ok){
-                    res.status(200).json(json)
-                }else{
-                    res.status(400).json(json)
-                }
-        })
-    }catch(err){
-        console.log(err)
-        res.status(400).json({error: err.message})
-    }    
-})
- */
 // Create a terminal
 router.post('/terminal/create', [auth, sales_finance], createTerminal)
-
-/* router.post('/terminal/create', [auth, sales_finance], async(req, res) =>{
-    const {token, comerRif, comerCuentaBanco, prefijo, modelo, serial} = req.body
-
-    const body = {
-        comerRif,
-        prefijo,
-        modelo,
-        serial,
-        comerCuentaBanco
-    }
-
-    try{
-        fetch(`${process.env.TRANRED_URL}/terminal/create`,{
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify(body)})
-            .then(async(response)=>{
-                const json = await response.json()
-                if(response.ok){
-                    res.status(200).json(json)
-                }else{
-                    res.status(400).json(json)
-                }
-        })
-    }catch(err){
-        console.log(err)
-        res.status(400).json({error: err.message})
-    }    
-}) */
 
 // Get a terminal
 router.get('/terminal/:id', [auth, sales_finance], getTerminal)
@@ -338,11 +167,11 @@ router.post('/terminal/status/:id', [auth, sales_finance], async(req, res) =>{
 
 // Get Terminal History
 router.post('/terminal/history/:id', [auth, sales_finance], async(req, res) =>{
-    const {token, dateInt, dateEnd} = req.body;
+    const {token, startDate, endDate} = req.body;
     const {id} = req.params;
 
     try{
-        fetch(`${process.env.TRANRED_URL}/historico/terminal/?terminal=${id}&DateInt=${dateInt}&DateEnd=${dateEnd}`,{
+        fetch(`${process.env.TRANRED_URL}/historico/terminal/?terminal=${id}&DateInt=${startDate}&DateEnd=${endDate}`,{
             method: 'GET',
             headers: {
                 'Authorization': `Bearer ${token}`
