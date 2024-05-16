@@ -68,14 +68,16 @@ router.post("/detail", [auth, sales], async (req, res)=>{
     const promisePool = pool.promise();
 
     const {user_id} = req.user;
-    const {
-        v_sale_id, 
-        v_prod_id,
-        v_salesdt_qty,
-        v_prod_price} = req.body;
+
+    const { v_sale_id,
+            v_prod_id,
+            v_salesdt_qty,
+            v_prod_price,
+            v_plan_id
+            } = req.body;
 
     try {
-        const result = await promisePool.query('CALL sp_add_saledt(?,?,?,?,?)', [ user_id, v_sale_id, v_prod_id, v_salesdt_qty, v_prod_price ]);
+        const result = await promisePool.query('CALL sp_add_saledt(?,?,?,?,?,?)', [ user_id, v_sale_id, v_prod_id, v_plan_id, v_salesdt_qty, v_prod_price  ]);
 
         res.status(200).json({
             ok: true,
@@ -83,10 +85,7 @@ router.post("/detail", [auth, sales], async (req, res)=>{
         });
         
     } catch (error) {
-        res.status(500).send({
-            ok: false, 
-            result: 'Not sure what happened :('
-        })
+        res.status(500).json({error: error.message})
     }
     
 });

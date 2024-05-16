@@ -17,7 +17,6 @@ const tranredLogin = (success, callback) => {
     password: process.env.TRANRED_PASSWORD,
   };
 
-  try {
     console.log("calling tranred");
     /* const current = Date.now()
         const newTime = current + (1*60*1000)
@@ -46,10 +45,10 @@ const tranredLogin = (success, callback) => {
         success = false;
         return success;
       }
-    });
-  } catch (error) {
+    })
+  .catch (function (error) {
     console.log(error.message);
-  }
+  })
 };
 
 //Check Tranred Token
@@ -164,40 +163,7 @@ const createCustomer = async (req, res) => {
     if (err) {
       return console.log(err.message);
     }
-    try {
-      /* fetch(`http://localhost:3001/api/v1/tranred/test/customer/create`, {
-        method: 'POST',
-        headers: {
-            'Authorization': `Bearer ${token}`,
-            'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(body)
-    })
-    .then(async(result)=>{
-      const json = await result.json();
-        if(result.ok){
-            res.status(200).json(json);
-        }
-        else {
-            res.status(400).json(json);
-        }
-    }) */
 
-      /*  if(!checkToken(row.timestamp)){
-            console.log('had to perform login')
-            tranredLogin(()=>{
-                return createCustomer(req,res)
-                /* console.log(loading)
-                if(!loading){
-                    return createCustomer(req,res)
-                }else{
-                    res.status(400).json({ error: 'ha ocurrido un error' });
-                } */
-
-      //      })
-      //  } else res.status(200).json({ body: body, token: row.token });
-
-      //res.status(200).json({ body: body, token: row.token });
       fetch(`${process.env.TRANRED_URL}/commerce/create`, {
         method: "POST",
         headers: {
@@ -230,11 +196,11 @@ const createCustomer = async (req, res) => {
         } else {
           return res.status(400).json(json);
         }
-      });
-    } catch (error) {
+      })
+    .catch (function(error) {
       console.log(error);
       res.status(400).json({ error: error.message });
-    }
+    })
   });
   db.close();
 };
@@ -249,7 +215,6 @@ const getOneCustomer = async (req, res) => {
       return console.log(err.message);
     }
 
-    try {
       fetch(`${process.env.TRANRED_URL}/commerce/rif/${id}`, {
         headers: {
           Authorization: `Bearer ${row.token}`,
@@ -271,11 +236,11 @@ const getOneCustomer = async (req, res) => {
         } else {
           return res.status(400).json(json);
         }
-      });
-    } catch (err) {
+      })
+    .catch (function (err) {
       console.log(err);
       res.status(400).json({ error: err.message });
-    }
+    })
   });
   db.close();
 };
@@ -288,7 +253,6 @@ const getAllCustomers = async (req, res) => {
     if (err) {
       return console.log(err.message);
     }
-    try {
       fetch(`${process.env.TRANRED_URL}/commerce/all`, {
         headers: {
           Authorization: `Bearer ${row.token}`,
@@ -310,11 +274,12 @@ const getAllCustomers = async (req, res) => {
         } else {
           return res.status(400).json(json);
         }
-      });
-    } catch (err) {
+      })
+    .catch(function(err) {
+      console.log('catch')
       console.log(err);
       res.status(400).json({ error: err.message });
-    }
+    })
   });
   db.close();
 };
@@ -335,7 +300,6 @@ const editCustomer = async (req, res) => {
       return console.log(err.message);
     }
 
-    try {
       fetch(`${process.env.TRANRED_URL}/commerce`, {
         method: "PUT",
         headers: {
@@ -359,14 +323,37 @@ const editCustomer = async (req, res) => {
         } else {
           return res.status(400).json(json);
         }
-      });
-    } catch (err) {
+      })
+    .catch (function (err) {
       console.log(err);
       res.status(400).json({ error: err.message });
-    }
+    })
   });
   db.close();
 };
+
+// Create tranred terminal in mysql db
+const createTerminalInDB = async (req, res, term_tranred)=>{
+  const promisePool = pool.promise();
+
+  const {
+      serial_id,
+      plan_id
+      } = req.body;
+
+  try {
+      const result = await promisePool.query('INSERT INTO t_terminal (term_tranred, serial_id, plan_id) VALUES(?,?,?)', [term_tranred, serial_id, plan_id]);
+
+      if(result[0].insertId){
+        return true
+      }     
+      
+  } catch (error) {
+    console.log(error,message)
+    return false;
+  }
+}
+
 
 //Create Tranred Terminal
 const createTerminal = async (req, res) => {
@@ -383,12 +370,12 @@ const createTerminal = async (req, res) => {
     serial,
     plan
   };
+
   db.get(sql, function (err, row) {
     if (err) {
       return console.log(err.message);
     }
 
-    try {
       fetch(`${process.env.TRANRED_URL}/terminal/create`, {
         method: "POST",
         headers: {
@@ -399,8 +386,12 @@ const createTerminal = async (req, res) => {
       }).then(async (response) => {
         const json = await response.json();
         if (response.ok) {
-          savePlansToSQLite;
-          res.status(200).json(json);
+          const term_tranred = json.terminal
+          if(createTerminalInDB(req, res,term_tranred)){
+            res.status(200).json(json);
+          }else{
+            res.status(500).json({message: 'Ha ocurrido un error al actualizar el registro'})
+          }
         } else if (json.statusCode == 401) {
           console.log("had to perform login");
           if (success) {
@@ -414,11 +405,11 @@ const createTerminal = async (req, res) => {
         } else {
           return res.status(400).json(json);
         }
-      });
-    } catch (err) {
+      })
+    .catch (function(err) {
       console.log(err);
       res.status(400).json({ error: err.message });
-    }
+    })
   });
   db.close();
 };
@@ -434,13 +425,11 @@ const getTerminal = async (req, res) => {
       return console.log(err.message);
     }
 
-    try {
       fetch(`${process.env.TRANRED_URL}/terminal/${id}`, {
         method: "GET",
         headers: {
           Authorization: `Bearer ${row.token}`,
         },
-        body: JSON.stringify(body),
       }).then(async (response) => {
         const json = await response.json();
         if (response.ok) {
@@ -458,11 +447,11 @@ const getTerminal = async (req, res) => {
         } else {
           return res.status(400).json(json);
         }
-      });
-    } catch (err) {
+      })
+    .catch (function (err) {
       console.log(err);
       res.status(400).json({ error: err.message });
-    }
+    })
   });
   db.close();
 };
@@ -478,7 +467,6 @@ const updateTerminal = async(req, res)=>{
       return console.log(err.message);
     }
 
-    try {
       fetch(`${process.env.TRANRED_URL}/terminal/update`, {
         method: "POST",
         headers: {
@@ -503,11 +491,11 @@ const updateTerminal = async(req, res)=>{
         } else {
           return res.status(400).json(json);
         }
-      });
-    } catch (err) {
+      })
+    .catch (function (err) {
       console.log(err);
       res.status(400).json({ error: err.message });
-    }
+    })
   });
   db.close();
 }
@@ -523,7 +511,6 @@ const getCuotas = async(req, res)=>{
       return console.log(err.message);
     }
 
-    try {
       fetch(`${process.env.TRANRED_URL}/terminal/cuotasAnular/${terminal}/${planId}/${startDate}/${endDate}`, {
         method: "GET",
         headers: {
@@ -546,11 +533,11 @@ const getCuotas = async(req, res)=>{
         } else {
           return res.status(400).json(json);
         }
-      });
-    } catch (err) {
+      })
+    .catch (function (err) {
       console.log(err);
       res.status(400).json({ error: err.message });
-    }
+    })
   });
   db.close();
 }
@@ -574,7 +561,6 @@ const cancelCuota = async(req, res)=>{
       return console.log(err.message);
     }
 
-    try {
       fetch(`${process.env.TRANRED_URL}/terminal/AnularCuotas}`, {
         method: "POST",
         headers: {
@@ -599,14 +585,42 @@ const cancelCuota = async(req, res)=>{
         } else {
           return res.status(400).json(json);
         }
-      });
-    } catch (err) {
+      })
+    .catch (function (err) {
       console.log(err);
       res.status(400).json({ error: err.message });
-    }
+    })
   });
   db.close();
 }
+
+// Insert plans into MySQL DB
+const insertPlansInDB = (plans)=>{
+  const promisePool = pool.promise();
+  if(!plans.length){
+    return false
+  }
+
+  async function insert(i){
+    if(i === 0){
+      return true
+    }else{
+      const result = await promisePool.query('INSERT INTO t_plans (plan_id, plan_desc, plan_amount) VALUES(?,?,?)', [plans[i-1].a_planId, plans[i-1].a_planNombre, null]);
+      if(result[0].insertId){
+        return insert(i-1)
+      } 
+    }
+  }
+
+  try {
+    if(insert(plans.length)) return true
+      
+  } catch (error) {
+    console.log(error,message)
+    return false;
+  }
+}
+
 
 // Update plans
 const updatePlans = async (req, res) => {
@@ -617,7 +631,6 @@ const updatePlans = async (req, res) => {
       res.status(400).json({mstatusCode: 400, message: err.message});
     }
 
-    try {
       fetch(`${process.env.TRANRED_URL}/terminal/planes/all`, {
         method: "GET",
         headers: {
@@ -627,7 +640,12 @@ const updatePlans = async (req, res) => {
         const json = await response.json();
         if (response.ok) {
           savePlansToSQLite(json.terminales, () => {
-            res.status(200).json(json);
+            if(insertPlansInDB){
+              res.status(200).json(json);
+            }
+            else{
+              res.status(500).json({message: 'Falló al insertar en la BD'})
+            }
           });
         } else if (json.statusCode == 401) {
           console.log("had to perform login");
@@ -642,11 +660,11 @@ const updatePlans = async (req, res) => {
         } else {
           return res.status(400).json(json);
         }
-      });
-    } catch (err) {
+      })
+    .catch (function(err) {
       console.log(err);
       res.status(400).json({ error: err.message });
-    }
+    })
   });
   db.close();
 };
@@ -681,5 +699,6 @@ module.exports = {
   updatePlans,
   cancelCuota,
   getCuotas,
-  updateTerminal
+  updateTerminal,
+  createTerminalInDB
 };

@@ -7,7 +7,7 @@ const pool = require("../db")
 //import middlewares
 const auth = require("../middlewares/auth");
 const {admin, sales, finance, sales_finance} = require("../middlewares/roles");
-const {createCustomer, getOneCustomer, getAllCustomers, editCustomer, createTerminal, getTerminal, createTranredCustomer, updatePlans, getPlans} = require("./controllers");
+const {createCustomer, getOneCustomer, getAllCustomers, editCustomer, createTerminal, getTerminal, createTranredCustomer, updatePlans, getPlans,createTerminalInDB} = require("./controllers");
 //const {tranredToken} = require("../middlewares/tranredToken")
 
 //import controllers
@@ -87,6 +87,9 @@ router.post('/terminal/create', [auth, sales_finance], createTerminal)
 
 // Get a terminal
 router.get('/terminal/:id', [auth, sales_finance], getTerminal)
+
+// Creater terminal in DB
+router.post('/terminal/new', createTerminalInDB)
 
 /* router.post('/terminal/:id', [auth, sales_finance], async(req, res) =>{
     const {token} = req.body;
@@ -192,7 +195,7 @@ router.post('/terminal/history/:id', [auth, sales_finance], async(req, res) =>{
 })
 
 // Update Plans from Tranred
-router.get('/terminal/plans/update', [auth, sales_finance], updatePlans)
+router.get('/terminal/plans/update', [auth, admin], updatePlans)
 
 // Get Plans from SQLite
 router.get('/terminal/plans/all', [auth, sales_finance], getPlans)
