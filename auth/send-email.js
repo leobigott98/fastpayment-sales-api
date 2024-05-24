@@ -18,6 +18,10 @@ const transporter = nodemailer.createTransport({
 // async..await is not allowed in global scope, must use a wrapper
 async function main(mail, subject, message) {
   // send mail with defined transport object
+  console.log({
+    user: process.env.SMTPUSER,
+    pass: process.env.SMTPPASSWORD,
+  })
 
   // check if it is for otp
   if(subject === 'otp'){

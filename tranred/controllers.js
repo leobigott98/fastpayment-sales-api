@@ -640,7 +640,7 @@ const updatePlans = async (req, res) => {
         const json = await response.json();
         if (response.ok) {
           savePlansToSQLite(json.terminales, () => {
-            if(insertPlansInDB){
+            if(insertPlansInDB(json.terminales)){
               res.status(200).json(json);
             }
             else{
@@ -651,7 +651,7 @@ const updatePlans = async (req, res) => {
           console.log("had to perform login");
           if (success) {
             tranredLogin(success, () => {
-              return getOneCustomer(req, res);
+              return updatePlans(req, res);
             });
           } else
             return res

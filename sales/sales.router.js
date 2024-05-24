@@ -173,6 +173,28 @@ router.post('/account', [auth, sales_finance], async (req,res)=>{
 
 })
 
+router.get('/detail/:id', [auth, sales_finance], async(req, res)=>{
+    const {id} = req.params
+    const sqlQuery = `SELECT t_saledt.sale_id, t_saledt.saledt_id, t_product.prod_brand, t_product.prod_model, t_product.prod_price, t_saledt.saledt_qty, t_plans.plan_desc, t_plans.plan_amount, t_sales.sale_dreg, t_sellers.sell_fee, t_user.user_email, t_user.user_name, t_user.user_last
+    FROM t_saledt
+    INNER JOIN t_product ON t_saledt.prod_id = t_product.prod_id
+    INNER JOIN t_sales ON t_saledt.sale_id = t_sales.sale_id
+    LEFT JOIN t_plans ON t_saledt.plan_id = t_plans.plan_id
+    INNER JOIN t_sellers ON t_sales.sell_id = t_sellers.sell_id
+    INNER JOIN t_user ON t_sellers.user_id = t_user.user_id
+    WHERE t_saledt.sale_id = ?;`
+
+    try {
+        const promisePool = pool.promise();
+        const response = await promisePool.query(sqlQuery, [id]);
+        
+        res.status(200).json(response[0]);
+
+    } catch (error) {
+        res.status(400).json(error.message)
+    }
+})
+
 
 //export the router
 module.exports = router;

@@ -84,4 +84,32 @@ router.post("/", [auth, sales], async (req, res)=>{
     
 });
 
+// Get One Customer
+router.get("/:id", [auth, sales_finance], async (req, res)=>{
+    const sql = `SELECT t_customer.cusm_namec, t_customer.cusm_tranred, t_percontact.percon_email, t_percontact.percon_name, t_percontact.percon_last, t_percontact.percon_local, t_percontact.percon_movil, p_codigos_tlocal.cod_value AS codLocal, p_codigos_tmovil.cod_value AS codMovil 
+    FROM t_percontact
+    INNER JOIN t_customer ON t_percontact.cusm_id = t_customer.cusm_id 
+    INNER JOIN p_codigos_tlocal ON p_codigos_tlocal.cod_localid = t_percontact.cod_localid
+    INNER JOIN p_codigos_tmovil ON p_codigos_tmovil.cod_movilid = t_percontact.cod_movilid
+    WHERE t_customer.cusm_id = ?; `
+    const {id} = req.params;
+    const promisePool = pool.promise();
+
+    try {
+        const result = await promisePool.query(sql, [id]);
+
+        res.status(200).json({
+            ok: true,
+            result: result[0][0]
+        });
+        
+    } catch (error) {
+        res.status(500).send({
+            ok: false, 
+            result: 'Not sure what happened :('
+        })
+    }
+
+})
+
 module.exports = router;
