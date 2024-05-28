@@ -60,6 +60,25 @@ router.post("", [auth, sales_finance], async (req, res)=>{
     
 });
 
+// Get payment detail
+router.get('/:id', [auth, finance], async(req, res)=>{
+    const promisePool = pool.promise();
+
+    const {user_id} = req.user;
+    const { id } = req.params;
+    
+    try {
+        const result = await promisePool.query('CALL sp_get_paydt(?,?)', [user_id, id]);
+
+        res.status(200).json({
+            result: result[0]
+        });
+        
+    } catch (error) {
+        res.status(400).json({ message: error.message})
+    }
+})
+
 
 
 
