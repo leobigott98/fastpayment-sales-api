@@ -83,7 +83,7 @@ router.get('/customer/all', [auth, sales_finance], getAllCustomers)
 router.post('/customer/edit', [auth, sales_finance], editCustomer)
 
 // Create a terminal
-router.post('/terminal/create', [auth, sales_finance], createTerminal)
+router.post('/terminal/create/:id', [auth, sales_finance], createTerminal)
 
 // Get a terminal
 router.get('/terminal/:id', [auth, sales_finance], getTerminal)

@@ -155,7 +155,7 @@ router.get('/serials/:id', [auth, sales_finance], async(req, res)=>{
     }
 })
 
-// assign account number to a sale
+// assign account number to a serial
 router.post('/account', [auth, sales_finance], async (req,res)=>{
     const {user_id} = req.user;
     const {v_sale_id, v_bank_id, v_acct_number, v_serial_num} = req.body;
