@@ -356,11 +356,73 @@ const createTerminalInDB = async (req, res, term_tranred) => {
   }
 };
 
+// Create Terminal Function
+const newTerminal = async(success, error, terminalArray, index, res, row, responseArray, promisePool)=>{
+  if (error) {
+    return res.status(400).json({ responseArray });
+  } else if(responseArray.length == terminalArray.length){
+    return res.status(200).json({responseArray})
+  } else {
+
+  const body = {
+    comerRif: terminalArray[index].comerRif,
+    comerCuentaBanco: terminalArray[index].comerCuentaBanco,
+    prefijo: "62",
+    comerCantPost: 1,
+    modelo: terminalArray[index].modelo,
+    serial: terminalArray[index].serial,
+    plan: 1,
+  };
+
+  fetch(`${process.env.TRANRED_URL}/terminal/create`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${row.token}`,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(body),
+  })
+    .then(async (response) => {
+      console.log('called tranred')
+      const json = await response.json();
+      responseArray.push({serial: terminalArray[index], response: json})
+      await promisePool.query('CALL sp_new_terminalLog(?, ?, ?);', [terminalArray[index].serial, response.status, JSON.stringify(json)]);
+      if (response.ok) {
+        const term_tranred = json.terminal;
+        if (createTerminalInDB(req, res, term_tranred)) {
+          console.log("created in MySQL");
+          console.log(json);
+        } else {
+          console.log(`error al registrar ${json}`);
+        }
+      } else if (json.statusCode == 401) {
+        console.log("had to perform login");
+        if (success) {
+          tranredLogin(success, () => {
+            return createTerminal(req, res);
+          });
+        } else {
+          error = true;
+          }
+      } else {
+        error = true;
+      }
+      newTerminal(success, error, terminalArray, index+1, res, row, responseArray, promisePool);
+    })
+    .catch(function (err) {
+      console.log(err);
+      return res.status(400).json({ error: err.message });
+    });
+  }
+  
+}
+
 //Create Tranred Terminal
 const createTerminal = async (req, res) => {
   const db = new sqlite3.Database("./sqlite/tranred.db");
   let success = true;
   let error = false;
+  let responseArray = [];
   const promisePool = pool.promise();
   const query = `SELECT CONCAT(p_doc_type.doc_value, t_customer.cusm_ndoc) AS comerRif, t_account.acct_number AS comerCuentaBanco, t_product.prod_model_tr AS modelo, t_serials.serial_num AS serial
 	FROM t_sales
@@ -383,64 +445,7 @@ const createTerminal = async (req, res) => {
         if (err) {
           res.status(400).json({ message: err.message });
         } else {
-          terminalArray.forEach((terminal) => {
-            if (error) {
-              return;
-            } else {
-              const body = {
-                comerRif: terminal.comerRif,
-                comerCuentaBanco: terminal.comerCuentaBanco,
-                prefijo: "62",
-                comerCantPost: 1,
-                modelo: terminal.modelo,
-                serial: terminal.serial,
-                plan: 1,
-              };
-
-              fetch(`${process.env.TRANRED_URL}/terminal/create`, {
-                method: "POST",
-                headers: {
-                  Authorization: `Bearer ${row.token}`,
-                  "Content-Type": "application/json",
-                },
-                body: JSON.stringify(body),
-              })
-                .then(async (response) => {
-                  const json = await response.json();
-                  if (response.ok) {
-                    const term_tranred = json.terminal;
-                    if (createTerminalInDB(req, res, term_tranred)) {
-                      console.log("created in MySQL");
-                      console.log(json);
-                    } else {
-                      console.log(`error al registrar ${json}`);
-                    }
-                  } else if (json.statusCode == 401) {
-                    console.log("had to perform login");
-                    if (success) {
-                      tranredLogin(success, () => {
-                        return createTerminal(req, res);
-                      });
-                    } else {
-                      error = true;
-                      return res
-                        .status(400)
-                        .json({
-                          statusCode: 400,
-                          message: "Something happened",
-                        });
-                      }
-                  } else {
-                    error = true;
-                    return res.status(400).json(json);
-                  }
-                })
-                .catch(function (err) {
-                  console.log(err);
-                  return res.status(400).json({ error: err.message });
-                });
-            }
-          });
+          newTerminal(success, error, terminalArray, 0, res, row, responseArray, promisePool)
         }
       });
       db.close();
