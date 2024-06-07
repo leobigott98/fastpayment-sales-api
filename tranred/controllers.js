@@ -336,15 +336,15 @@ const editCustomer = async (req, res) => {
 };
 
 // Create tranred terminal in mysql db
-const createTerminalInDB = async (req, res, term_tranred) => {
+const createTerminalInDB = async (element, term_tranred) => {
   const promisePool = pool.promise();
 
-  const { serial_id, plan_id } = req.body;
+  const { serial_id, plan } = element;
 
   try {
     const result = await promisePool.query(
       "INSERT INTO t_terminal (term_tranred, serial_id, plan_id) VALUES(?,?,?)",
-      [term_tranred, serial_id, plan_id]
+      [term_tranred, serial_id, plan]
     );
 
     if (result[0].insertId) {
@@ -357,7 +357,7 @@ const createTerminalInDB = async (req, res, term_tranred) => {
 };
 
 // Create Terminal Function
-const newTerminal = async(success, error, terminalArray, index, res, row, responseArray, promisePool)=>{
+const newTerminal = async(success, error, terminalArray, index, res, row, responseArray, promisePool, req)=>{
   if (error) {
     return res.status(400).json({ responseArray });
   } else if(responseArray.length == terminalArray.length){
@@ -373,6 +373,7 @@ const newTerminal = async(success, error, terminalArray, index, res, row, respon
     serial: terminalArray[index].serial,
     plan: 1,
   };
+  console.log(body);
 
   fetch(`${process.env.TRANRED_URL}/terminal/create`, {
     method: "POST",
@@ -389,11 +390,11 @@ const newTerminal = async(success, error, terminalArray, index, res, row, respon
       await promisePool.query('CALL sp_new_terminalLog(?, ?, ?);', [terminalArray[index].serial, response.status, JSON.stringify(json)]);
       if (response.ok) {
         const term_tranred = json.terminal;
-        if (createTerminalInDB(req, res, term_tranred)) {
+        if (createTerminalInDB(terminalArray[index], term_tranred)) {
           console.log("created in MySQL");
           console.log(json);
         } else {
-          console.log(`error al registrar ${json}`);
+          console.log(`error al registrar ${json.message}`);
         }
       } else if (json.statusCode == 401) {
         console.log("had to perform login");
@@ -407,7 +408,7 @@ const newTerminal = async(success, error, terminalArray, index, res, row, respon
       } else {
         error = true;
       }
-      newTerminal(success, error, terminalArray, index+1, res, row, responseArray, promisePool);
+      newTerminal(success, error, terminalArray, index+1, res, row, responseArray, promisePool, req);
     })
     .catch(function (err) {
       console.log(err);
@@ -424,7 +425,7 @@ const createTerminal = async (req, res) => {
   let error = false;
   let responseArray = [];
   const promisePool = pool.promise();
-  const query = `SELECT CONCAT(p_doc_type.doc_value, t_customer.cusm_ndoc) AS comerRif, t_account.acct_number AS comerCuentaBanco, t_product.prod_model_tr AS modelo, t_serials.serial_num AS serial
+  const query = `SELECT CONCAT(p_doc_type.doc_value, t_customer.cusm_ndoc) AS comerRif, t_account.acct_number AS comerCuentaBanco, t_product.prod_model_tr AS modelo, t_serials.serial_num AS serial, t_serials.serial_id 
 	FROM t_sales
 	INNER JOIN t_customer ON t_sales.cusm_id = t_customer.cusm_id
 	INNER JOIN p_doc_type ON t_customer.doc_typeid = p_doc_type.doc_typeid
@@ -735,6 +736,49 @@ const getPlans = async (req, res) => {
   db.close();
 };
 
+const getTerminalHistory = async (req, res) =>{
+  const db = new sqlite3.Database("./sqlite/tranred.db");
+  let success = true;
+  const { terminal, startDate, endDate } = req.params;
+
+  db.get(sql, function (err, row) {
+    if (err) {
+      return console.log(err.message);
+    }
+
+    fetch(`${process.env.TRANRED_URL}/historico/terminal/?terminal=${terminal}&DateInt=${startDate}&DateEnd=${endDate}`,{
+      method: 'GET',
+      headers: {
+          'Authorization': `Bearer ${token}`
+      },
+      body: JSON.stringify(body)})
+      .then(async (response) => {
+        const json = await response.json();
+        if (response.ok) {
+          res.status(200).json(json);
+        } else if (json.statusCode == 401) {
+          console.log("had to perform login");
+          if (success) {
+            tranredLogin(success, () => {
+              return getOneCustomer(req, res);
+            });
+          } else
+            return res
+              .status(400)
+              .json({ statusCode: 400, message: "Something happened" });
+        } else {
+          return res.status(400).json(json);
+        }
+      })
+      .catch(function (err) {
+        console.log(err);
+        res.status(400).json({ error: err.message });
+      });
+  });
+  db.close();
+
+}
+
 //
 
 module.exports = {
@@ -751,4 +795,5 @@ module.exports = {
   getCuotas,
   updateTerminal,
   createTerminalInDB,
+  getTerminalHistory
 };

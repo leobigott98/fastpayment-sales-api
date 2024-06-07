@@ -7,7 +7,7 @@ const pool = require("../db")
 //import middlewares
 const auth = require("../middlewares/auth");
 const {admin, sales, finance, sales_finance} = require("../middlewares/roles");
-const {createCustomer, getOneCustomer, getAllCustomers, editCustomer, createTerminal, getTerminal, createTranredCustomer, updatePlans, getPlans,createTerminalInDB} = require("./controllers");
+const {createCustomer, getOneCustomer, getAllCustomers, editCustomer, createTerminal, getTerminal, createTranredCustomer, updatePlans, getPlans,createTerminalInDB, getCuotas, cancelCuota, getTerminalHistory} = require("./controllers");
 //const {tranredToken} = require("../middlewares/tranredToken")
 
 //import controllers
@@ -169,36 +169,17 @@ router.post('/terminal/status/:id', [auth, sales_finance], async(req, res) =>{
 })
 
 // Get Terminal History
-router.post('/terminal/history/:id', [auth, sales_finance], async(req, res) =>{
-    const {token, startDate, endDate} = req.body;
-    const {id} = req.params;
-
-    try{
-        fetch(`${process.env.TRANRED_URL}/historico/terminal/?terminal=${id}&DateInt=${startDate}&DateEnd=${endDate}`,{
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify(body)})
-            .then(async(response)=>{
-                const json = await response.json()
-                if(response.ok){
-                    res.status(200).json(json)
-                }else{
-                    res.status(400).json(json)
-                }
-        })
-    }catch(err){
-        console.log(err)
-        res.status(400).json({error: err.message})
-    }    
-})
+router.post('/terminal/history/:terminal/:startDate/:endDate', [auth, sales_finance], getTerminalHistory)
 
 // Update Plans from Tranred
 router.get('/terminal/plans/update', [auth, admin], updatePlans)
 
 // Get Plans from SQLite
 router.get('/terminal/plans/all', [auth, sales_finance], getPlans)
+
+router.get('/terminal/getCuotasPendientes/:terminal/:planId/:startDate/:endDate', [auth, sales_finance], getCuotas)
+
+router.post('terminal/anularCuotas', [auth, sales_finance], cancelCuota)
 
 
 //export the router
