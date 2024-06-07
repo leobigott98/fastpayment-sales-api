@@ -7,11 +7,7 @@ const pool = require("../db")
 //import middlewares
 const auth = require("../middlewares/auth");
 const {admin, sales, finance, sales_finance} = require("../middlewares/roles");
-const {createCustomer, getOneCustomer, getAllCustomers, editCustomer, createTerminal, getTerminal, createTranredCustomer, updatePlans, getPlans,createTerminalInDB, getCuotas, cancelCuota, getTerminalHistory} = require("./controllers");
-//const {tranredToken} = require("../middlewares/tranredToken")
-
-//import controllers
-//const tranredLogin = require("./controllers");
+const {createCustomer, getOneCustomer, getAllCustomers, editCustomer, createTerminal, getTerminal, createTranredCustomer, updatePlans, getPlans,createTerminalInDB, getCuotas, cancelCuota, getTerminalHistory, changeTerminalStatus, updateBankAccount} = require("./controllers");
 
 //set up the express server router
 const router = express.Router();
@@ -91,82 +87,11 @@ router.get('/terminal/:id', [auth, sales_finance], getTerminal)
 // Creater terminal in DB
 router.post('/terminal/new', createTerminalInDB)
 
-/* router.post('/terminal/:id', [auth, sales_finance], async(req, res) =>{
-    const {token} = req.body;
-    const {id} = req.params;
-
-    try{
-        fetch(`${process.env.TRANRED_URL}/terminal/${id}`,{
-            method: 'GET',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify(body)})
-            .then(async(response)=>{
-                const json = await response.json()
-                if(response.ok){
-                    res.status(200).json(json)
-                }else{
-                    res.status(400).json(json)
-                }
-        })
-    }catch(err){
-        console.log(err)
-        res.status(400).json({error: err.message})
-    }    
-}) */
+//Change terminar status
+router.put('/terminal/updateStatus/:id', changeTerminalStatus)
 
 // Edit Terminal Bank Account
-router.post('/terminal/bank/:id', [auth, sales_finance], async(req, res) =>{
-    const {token} = req.body;
-    const {id} = req.params;
-
-    try{
-        fetch(`${process.env.TRANRED_URL}/terminal/bank/${id}`,{
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify(body)})
-            .then(async(response)=>{
-                const json = await response.json()
-                if(response.ok){
-                    res.status(200).json(json)
-                }else{
-                    res.status(400).json(json)
-                }
-        })
-    }catch(err){
-        console.log(err)
-        res.status(400).json({error: err.message})
-    }    
-})
-
-// Change Terminal Status
-router.post('/terminal/status/:id', [auth, sales_finance], async(req, res) =>{
-    const {token} = req.body;
-    const {id} = req.params;
-
-    try{
-        fetch(`${process.env.TRANRED_URL}/terminal/status/${id}`,{
-            method: 'PUT',
-            headers: {
-                'Authorization': `Bearer ${token}`
-            },
-            body: JSON.stringify(body)})
-            .then(async(response)=>{
-                const json = await response.json()
-                if(response.ok){
-                    res.status(200).json(json)
-                }else{
-                    res.status(400).json(json)
-                }
-        })
-    }catch(err){
-        console.log(err)
-        res.status(400).json({error: err.message})
-    }    
-})
+router.post('/terminal/bank/:id', [auth, sales_finance], updateBankAccount)
 
 // Get Terminal History
 router.post('/terminal/history/:terminal/:startDate/:endDate', [auth, sales_finance], getTerminalHistory)
