@@ -7,7 +7,7 @@ const pool = require("../db")
 //import middlewares
 const auth = require("../middlewares/auth");
 const {admin, sales, finance, sales_finance} = require("../middlewares/roles");
-const {createCustomer, getOneCustomer, getAllCustomers, editCustomer, createTerminal, getTerminal, createTranredCustomer, updatePlans, getPlans,createTerminalInDB, getCuotas, cancelCuota, getTerminalHistory, changeTerminalStatus, updateBankAccount} = require("./controllers");
+const {createCustomer, getOneCustomer, getAllCustomers, editCustomer, createTerminal, getTerminal, createTranredCustomer, updatePlans, getPlans,createTerminalInDB, getCuotas, cancelCuota, getTerminalHistory, changeTerminalStatus, updateBankAccount, updateTranredCustomer} = require("./controllers");
 
 //set up the express server router
 const router = express.Router();
@@ -105,6 +105,8 @@ router.get('/terminal/plans/all', [auth, sales_finance], getPlans)
 router.get('/terminal/getCuotasPendientes/:terminal/:planId/:startDate/:endDate', [auth, sales_finance], getCuotas)
 
 router.post('terminal/anularCuotas', [auth, sales_finance], cancelCuota)
+
+router.put('/customer', [auth, sales], updateTranredCustomer)
 
 
 //export the router
