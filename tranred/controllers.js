@@ -357,66 +357,88 @@ const createTerminalInDB = async (element, term_tranred) => {
 };
 
 // Create Terminal Function
-const newTerminal = async(success, error, terminalArray, index, res, row, responseArray, promisePool, req)=>{
+const newTerminal = async (
+  success,
+  error,
+  terminalArray,
+  index,
+  res,
+  row,
+  responseArray,
+  promisePool,
+  req
+) => {
   if (error) {
     return res.status(400).json({ responseArray });
-  } else if(responseArray.length == terminalArray.length){
-    return res.status(200).json({responseArray})
+  } else if (responseArray.length == terminalArray.length) {
+    return res.status(200).json({ responseArray });
   } else {
+    const body = {
+      comerRif: terminalArray[index].comerRif,
+      comerCuentaBanco: terminalArray[index].comerCuentaBanco,
+      prefijo: "62",
+      comerCantPost: 1,
+      modelo: terminalArray[index].modelo,
+      serial: terminalArray[index].serial,
+      plan: 1,
+    };
+    console.log(body);
 
-  const body = {
-    comerRif: terminalArray[index].comerRif,
-    comerCuentaBanco: terminalArray[index].comerCuentaBanco,
-    prefijo: "62",
-    comerCantPost: 1,
-    modelo: terminalArray[index].modelo,
-    serial: terminalArray[index].serial,
-    plan: 1,
-  };
-  console.log(body);
-
-  fetch(`${process.env.TRANRED_URL}/terminal/create`, {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${row.token}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify(body),
-  })
-    .then(async (response) => {
-      console.log('called tranred')
-      const json = await response.json();
-      responseArray.push({serial: terminalArray[index], response: json})
-      await promisePool.query('CALL sp_new_terminalLog(?, ?, ?);', [terminalArray[index].serial, response.status, JSON.stringify(json)]);
-      if (response.ok) {
-        const term_tranred = json.terminal;
-        if (createTerminalInDB(terminalArray[index], term_tranred)) {
-          console.log("created in MySQL");
-          console.log(json);
-        } else {
-          console.log(`error al registrar ${json.message}`);
-        }
-      } else if (json.statusCode == 401) {
-        console.log("had to perform login");
-        if (success) {
-          tranredLogin(success, () => {
-            return createTerminal(req, res);
-          });
+    fetch(`${process.env.TRANRED_URL}/terminal/create`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${row.token}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(body),
+    })
+      .then(async (response) => {
+        console.log("called tranred");
+        const json = await response.json();
+        responseArray.push({ serial: terminalArray[index], response: json });
+        await promisePool.query("CALL sp_new_terminalLog(?, ?, ?);", [
+          terminalArray[index].serial,
+          response.status,
+          JSON.stringify(json),
+        ]);
+        if (response.ok) {
+          const term_tranred = json.terminal;
+          if (createTerminalInDB(terminalArray[index], term_tranred)) {
+            console.log("created in MySQL");
+            console.log(json);
+          } else {
+            console.log(`error al registrar ${json.message}`);
+          }
+        } else if (json.statusCode == 401) {
+          console.log("had to perform login");
+          if (success) {
+            tranredLogin(success, () => {
+              return createTerminal(req, res);
+            });
+          } else {
+            error = true;
+          }
         } else {
           error = true;
-          }
-      } else {
-        error = true;
-      }
-      newTerminal(success, error, terminalArray, index+1, res, row, responseArray, promisePool, req);
-    })
-    .catch(function (err) {
-      console.log(err);
-      return res.status(400).json({ error: err.message });
-    });
+        }
+        newTerminal(
+          success,
+          error,
+          terminalArray,
+          index + 1,
+          res,
+          row,
+          responseArray,
+          promisePool,
+          req
+        );
+      })
+      .catch(function (err) {
+        console.log(err);
+        return res.status(400).json({ error: err.message });
+      });
   }
-  
-}
+};
 
 //Create Tranred Terminal
 const createTerminal = async (req, res) => {
@@ -446,7 +468,16 @@ const createTerminal = async (req, res) => {
         if (err) {
           res.status(400).json({ message: err.message });
         } else {
-          newTerminal(success, error, terminalArray, 0, res, row, responseArray, promisePool)
+          newTerminal(
+            success,
+            error,
+            terminalArray,
+            0,
+            res,
+            row,
+            responseArray,
+            promisePool
+          );
         }
       });
       db.close();
@@ -737,7 +768,7 @@ const getPlans = async (req, res) => {
 };
 
 //Get terminal history
-const getTerminalHistory = async (req, res) =>{
+const getTerminalHistory = async (req, res) => {
   const db = new sqlite3.Database("./sqlite/tranred.db");
   let success = true;
   const { terminal, startDate, endDate } = req.params;
@@ -747,11 +778,15 @@ const getTerminalHistory = async (req, res) =>{
       return console.log(err.message);
     }
 
-    fetch(`${process.env.TRANRED_URL}/historico/terminal/?terminal=${terminal}&DateInt=${startDate}&DateEnd=${endDate}`,{
-      method: 'GET',
-      headers: {
-          'Authorization': `Bearer ${token}`
-      }})
+    fetch(
+      `${process.env.TRANRED_URL}/historico/terminal/?terminal=${terminal}&DateInt=${startDate}&DateEnd=${endDate}`,
+      {
+        method: "GET",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    )
       .then(async (response) => {
         const json = await response.json();
         if (response.ok) {
@@ -776,33 +811,33 @@ const getTerminalHistory = async (req, res) =>{
       });
   });
   db.close();
-
-}
+};
 
 // Update terminal status
-const changeTerminalStatus = async(req, res)=>{
+const changeTerminalStatus = async (req, res) => {
   const db = new sqlite3.Database("./sqlite/tranred.db");
   let success = true;
   const { id } = req.params;
-  const {status} = req.body
-  
-  if(status !== 0 && status !== 1){
-    return res.status(400).json({message: 'Debe ingresar un número válido'})
+  const { status } = req.body;
+
+  if (status !== 0 && status !== 1) {
+    return res.status(400).json({ message: "Debe ingresar un número válido" });
   }
 
-  const body = {status}
+  const body = { status };
 
   db.get(sql, function (err, row) {
     if (err) {
       return console.log(err.message);
     }
 
-    fetch(`${process.env.TRANRED_URL}/terminal/status/${id}`,{
-      method: 'PUT',
+    fetch(`${process.env.TRANRED_URL}/terminal/status/${id}`, {
+      method: "PUT",
       headers: {
-          'Authorization': `Bearer ${token}`
+        Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(body)})
+      body: JSON.stringify(body),
+    })
       .then(async (response) => {
         const json = await response.json();
         if (response.ok) {
@@ -827,32 +862,35 @@ const changeTerminalStatus = async(req, res)=>{
       });
   });
   db.close();
-}
+};
 
 // Update terminal bank account
-const updateBankAccount = async(req, res)=>{
+const updateBankAccount = async (req, res) => {
   const db = new sqlite3.Database("./sqlite/tranred.db");
   let success = true;
   const { id } = req.params;
-  const {comerCuentaBanco} = req.body
-  
-  if(typeof(comerCuentaBanco) !== "string" || !comerCuentaBanco){
-    return res.status(400).json({message: 'Debe ingresar un número de cuenta válido'})
+  const { comerCuentaBanco } = req.body;
+
+  if (typeof comerCuentaBanco !== "string" || !comerCuentaBanco) {
+    return res
+      .status(400)
+      .json({ message: "Debe ingresar un número de cuenta válido" });
   }
 
-  const body = {comerCuentaBanco}
+  const body = { comerCuentaBanco };
 
   db.get(sql, function (err, row) {
     if (err) {
       return console.log(err.message);
     }
 
-    fetch(`${process.env.TRANRED_URL}/terminal/bank/${id}`,{
-      method: 'PUT',
+    fetch(`${process.env.TRANRED_URL}/terminal/bank/${id}`, {
+      method: "PUT",
       headers: {
-          'Authorization': `Bearer ${token}`
+        Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify(body)})
+      body: JSON.stringify(body),
+    })
       .then(async (response) => {
         const json = await response.json();
         if (response.ok) {
@@ -877,9 +915,91 @@ const updateBankAccount = async(req, res)=>{
       });
   });
   db.close();
+};
+//Update customer in tranred
+const updateTranredCustomer = async (req, res) => {
+  const db = new sqlite3.Database("./sqlite/tranred.db");
+  let success = true;
+  const { comerRif, commerce } = req.body;
 
-}
-//
+  const body = {
+    comerRif,
+    commerce,
+  };
+
+  if (typeof comerRif !== "string" || !comerRif || !commerce) {
+    return res.status(400).json({ message: "Debe ingresar datos válidos" });
+  }
+
+  db.get(sql, function (err, row) {
+    if (err) {
+      return console.log(err.message);
+    }
+
+    fetch(`${process.env.TRANRED_URL}/comerce`, {
+      method: "PUT",
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(body),
+    })
+      .then(async (response) => {
+        const json = await response.json();
+        if (response.ok) {
+          res.status(200).json(json);
+        } else if (json.statusCode == 401) {
+          console.log("had to perform login");
+          if (success) {
+            tranredLogin(success, () => {
+              return getOneCustomer(req, res);
+            });
+          } else
+            return res
+              .status(400)
+              .json({ statusCode: 400, message: "Something happened" });
+        } else {
+          return res.status(400).json(json);
+        }
+      })
+      .catch(function (err) {
+        console.log(err);
+        res.status(400).json({ error: err.message });
+      });
+  });
+  db.close();
+};
+
+const getAllTerminals = async (req, res) => {
+  const query = `SELECT t_serials.serial_num AS "serial", t_terminal.term_tranred AS "terminal", CONCAT(p_doc_type.doc_value, t_customer.cusm_ndoc) AS "comerRif", 
+		              t_customer.cusm_namec, t_percontact.percon_name, t_percontact.percon_last, t_percontact.percon_email, 
+                  CONCAT(p_codigos_tlocal.cod_value, " - ", t_percontact.percon_local) AS "tlf", CONCAT(p_codigos_tmovil.cod_value, " - ", t_percontact.percon_movil) AS "movil",
+                  t_user.user_name "sales_name", t_user.user_last "sales_lastname", t_user.user_email AS "sales_email"
+                  FROM t_terminal
+                  INNER JOIN t_serials ON t_terminal.serial_id = t_serials.serial_id
+                  INNER JOIN t_sales ON t_serials.sale_id = t_sales.sale_id
+                  INNER JOIN t_customer ON t_sales.cusm_id = t_customer.cusm_id
+                  INNER JOIN p_doc_type ON t_customer.doc_typeid = p_doc_type.doc_typeid
+                  INNER JOIN t_percontact ON t_customer.cusm_id = t_percontact.cusm_id
+                  INNER JOIN p_codigos_tlocal ON t_percontact.cod_localid = p_codigos_tlocal.cod_localid
+                  INNER JOIN p_codigos_tmovil ON t_percontact.cod_movilid = p_codigos_tmovil.cod_movilid
+                  INNER JOIN t_saledt ON t_serials.sale_id = t_saledt.sale_id
+                  INNER JOIN t_sellers ON t_sales.sell_id = t_sellers.sell_id
+                  INNER JOIN t_user ON t_sellers.user_id = t_user.user_id`;
+
+  const promisePool = pool.promise();
+
+  try {
+    const result = await promisePool.query(query);
+    if (result[0][0]) {
+      res.status(200).json(result[0]);
+    } else {
+      res.status(400).json({ message: "No se encontraron registros" });
+    }
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: error.message });
+  }
+};
 
 module.exports = {
   createCustomer,
@@ -895,7 +1015,9 @@ module.exports = {
   getCuotas,
   updateTerminal,
   createTerminalInDB,
-  getTerminalHistory, 
+  getTerminalHistory,
   changeTerminalStatus,
-  updateBankAccount
+  updateBankAccount,
+  updateTranredCustomer,
+  getAllTerminals,
 };
