@@ -513,7 +513,7 @@ const getTerminal = async (req, res) => {
           console.log("had to perform login");
           if (success) {
             tranredLogin(success, () => {
-              return getOneCustomer(req, res);
+              return getTerminal(req, res);
             });
           } else
             return res
@@ -558,7 +558,7 @@ const updateTerminal = async (req, res) => {
           console.log("had to perform login");
           if (success) {
             tranredLogin(success, () => {
-              return getOneCustomer(req, res);
+              return updateTerminal(req, res);
             });
           } else
             return res
@@ -604,7 +604,7 @@ const getCuotas = async (req, res) => {
           console.log("had to perform login");
           if (success) {
             tranredLogin(success, () => {
-              return getOneCustomer(req, res);
+              return getCuotas(req, res);
             });
           } else
             return res
@@ -642,7 +642,7 @@ const cancelCuota = async (req, res) => {
       return console.log(err.message);
     }
 
-    fetch(`${process.env.TRANRED_URL}/terminal/AnularCuotas}`, {
+    fetch(`${process.env.TRANRED_URL}/terminal/terminalAnularCuotas`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${row.token}`,
@@ -658,7 +658,7 @@ const cancelCuota = async (req, res) => {
           console.log("had to perform login");
           if (success) {
             tranredLogin(success, () => {
-              return getOneCustomer(req, res);
+              return cancelCuota(req, res);
             });
           } else
             return res
@@ -779,7 +779,7 @@ const getTerminalHistory = async (req, res) => {
     }
 
     fetch(
-      `${process.env.TRANRED_URL}/historico/terminal/?terminal=${terminal}&DateInt=${startDate}&DateEnd=${endDate}`,
+      `${process.env.TRANRED_URL}/historico/terminal/?terminal=${terminal}&DateInit=${startDate}&DateEnd=${endDate}`,
       {
         method: "GET",
         headers: {
@@ -795,7 +795,7 @@ const getTerminalHistory = async (req, res) => {
           console.log("had to perform login");
           if (success) {
             tranredLogin(success, () => {
-              return getOneCustomer(req, res);
+              return getTerminalHistory(req, res);
             });
           } else
             return res
@@ -834,7 +834,8 @@ const changeTerminalStatus = async (req, res) => {
     fetch(`${process.env.TRANRED_URL}/terminal/status/${id}`, {
       method: "PUT",
       headers: {
-        Authorization: `Bearer ${token}`,
+        Authorization: `Bearer ${row.token}`,
+        "Content-Type": "application/json"
       },
       body: JSON.stringify(body),
     })
@@ -846,7 +847,7 @@ const changeTerminalStatus = async (req, res) => {
           console.log("had to perform login");
           if (success) {
             tranredLogin(success, () => {
-              return getOneCustomer(req, res);
+              return changeTerminalStatus(req, res);
             });
           } else
             return res
@@ -899,7 +900,7 @@ const updateBankAccount = async (req, res) => {
           console.log("had to perform login");
           if (success) {
             tranredLogin(success, () => {
-              return getOneCustomer(req, res);
+              return updateBankAccount(req, res);
             });
           } else
             return res
@@ -951,7 +952,7 @@ const updateTranredCustomer = async (req, res) => {
           console.log("had to perform login");
           if (success) {
             tranredLogin(success, () => {
-              return getOneCustomer(req, res);
+              return updateTranredCustomer(req, res);
             });
           } else
             return res

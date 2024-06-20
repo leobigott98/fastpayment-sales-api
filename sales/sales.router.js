@@ -1,6 +1,8 @@
 //import dependencies
 const express = require("express");
 const pool = require("../db");
+const fs = require("fs");
+const multer = require("multer");
 
 //import middlewares
 const auth = require("../middlewares/auth");
@@ -194,6 +196,21 @@ router.get('/detail/:id', [auth, sales_finance], async(req, res)=>{
         res.status(400).json(error.message)
     }
 })
+
+//upload photo
+const photosMiddleware = multer({ dest: "uploads/" });
+router.post("/upload", [auth, sales_finance, photosMiddleware.array("photos", 10)], (req, res) => {
+    const uploadedFiles = [];
+    for (let i = 0; i < req.files.length; i++) {
+      const { path, originalname } = req.files[i];
+      const parts = originalname.split(".");
+      const ext = parts[parts.length - 1];
+      const newPath = path + "." + ext;
+      fs.renameSync(path, newPath);
+      uploadedFiles.push(newPath.replace("uploads\\", ""));
+    }
+    res.json(uploadedFiles);
+  });
 
 
 //export the router

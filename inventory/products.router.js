@@ -41,6 +41,7 @@ router.post("/", [auth, storage], async (req, res)=>{
     
 });
 
+//Get Products
 router.get("/", [auth], async (req, res)=>{
     const promisePool = pool.promise();
 
