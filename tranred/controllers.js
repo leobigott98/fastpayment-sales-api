@@ -288,15 +288,44 @@ const getAllCustomers = async (req, res) => {
 
 //Edit Tranred Customer
 const editCustomer = async (req, res) => {
+  const promisePool = pool.promise();
   const db = new sqlite3.Database("./sqlite/tranred.db");
   let success = true;
   const { comerRif } = req.body;
   const { commerce } = req.body;
 
   const body = {
-    comerRif: comerRif,
-    commerce: commerce,
+    comerRif,
+    commerce: {
+      comerTipoPer: commerce.comerTipoPer,
+      idActivityXAfiliado: commerce.idActivityXAfiliado,
+      comerDesc: commerce.comerDesc,
+      comerCuentaBanco: commerce.comerCuentaBanco,
+      locationCommerce: req.body.commerceAddress,
+      locationContact: req.body.contactAddress,
+      locationPos: req.body.POSAddress,
+      daysOperacion: {
+        Lun: true,
+        Mar: true,
+        Mie: true,
+        Jue: true,
+        Vie: true,
+        Sab: true,
+        Dom: true,
+      },
+    },
+    contacto: req.body.contacto,
   };
+
+  const result = await promisePool.query(
+    "INSERT INTO t_terminal (term_tranred, serial_id, plan_id) VALUES(?,?,?)",
+    [term_tranred, serial_id, plan]
+  );
+
+  if (result[0].insertId) {
+    return true;
+  }
+
   db.get(sql, function (err, row) {
     if (err) {
       return console.log(err.message);
@@ -971,7 +1000,7 @@ const updateTranredCustomer = async (req, res) => {
 };
 
 const getAllTerminals = async (req, res) => {
-  const query = `SELECT t_serials.serial_num AS "serial", t_terminal.term_tranred AS "terminal", CONCAT(p_doc_type.doc_value, t_customer.cusm_ndoc) AS "comerRif", 
+  const query = `SELECT t_serials.serial_id AS "serial_id", t_serials.serial_num AS "serial", t_terminal.term_tranred AS "terminal", CONCAT(p_doc_type.doc_value, t_customer.cusm_ndoc) AS "comerRif", 
 		              t_customer.cusm_namec, t_percontact.percon_name, t_percontact.percon_last, t_percontact.percon_email, 
                   CONCAT(p_codigos_tlocal.cod_value, " - ", t_percontact.percon_local) AS "tlf", CONCAT(p_codigos_tmovil.cod_value, " - ", t_percontact.percon_movil) AS "movil",
                   t_user.user_name "sales_name", t_user.user_last "sales_lastname", t_user.user_email AS "sales_email"

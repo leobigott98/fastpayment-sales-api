@@ -76,6 +76,7 @@ const checkMyDataRouter = require("./auth/check-my-user.js");
 const newOTP = require("./auth/new-otp.js");
 const tranred = require("./tranred/tranred.router.js");
 const encrypt = require("./encrypt/encrypt.router.js");
+const simcard = require("./sales/simcard.router.js");
 
 //middleware
 /* const authenticated = async (req, res, next)=>{
@@ -126,6 +127,7 @@ app.use('/api/v1/auth/myData', checkMyDataRouter);
 app.use('/api/v1/auth/', newOTP);
 app.use('/api/v1/tranred/', tranred);
 app.use('/api/v1/encrypt/', encrypt);
+app.use('/api/v1/simcard/', simcard);
 
 const port = process.env.PORT || 3001;
 
