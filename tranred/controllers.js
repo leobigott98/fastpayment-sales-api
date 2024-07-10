@@ -368,12 +368,13 @@ const editCustomer = async (req, res) => {
 const createTerminalInDB = async (element, term_tranred) => {
   const promisePool = pool.promise();
 
+  const {user_id} = req.user
   const { serial_id, plan } = element;
 
   try {
     const result = await promisePool.query(
-      "INSERT INTO t_terminal (term_tranred, serial_id, plan_id) VALUES(?,?,?)",
-      [term_tranred, serial_id, plan]
+      "sp_add_terminal(?,?,?,?)",
+      [user_id, term_tranred, plan, serial_id]
     );
 
     if (result[0].insertId) {
@@ -571,7 +572,9 @@ const updateTerminal = async (req, res) => {
       return console.log(err.message);
     }
 
-    fetch(`${process.env.TRANRED_URL}/terminal/update`, {
+    console.log(body)
+
+     fetch(`${process.env.TRANRED_URL}/terminal/update`, {
       method: "POST",
       headers: {
         Authorization: `Bearer ${row.token}`,
@@ -600,7 +603,7 @@ const updateTerminal = async (req, res) => {
       .catch(function (err) {
         console.log(err);
         res.status(400).json({ error: err.message });
-      });
+      }); 
   });
   db.close();
 };

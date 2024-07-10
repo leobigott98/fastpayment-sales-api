@@ -112,4 +112,54 @@ router.get("/:id", [auth, sales_finance], async (req, res)=>{
 
 })
 
+// Get One Customer
+router.get("/info/:id", [auth, sales_finance], async (req, res)=>{
+    const sql = `CALL sp_get_customer_info(?) `
+    const {id} = req.params;
+    const promisePool = pool.promise();
+
+    try {
+        const result = await promisePool.query(sql, [id]);
+
+        console.log(result[0])
+
+        res.status(200).json({
+            ok: true,
+            result: result[0]
+        });
+        
+    } catch (error) {
+        console.log(error.message)
+        res.status(500).send({
+            ok: false, 
+            result: 'Not sure what happened :('
+        })
+    }
+
+})
+
+// Get Banks JSON
+router.get("/test/:id", [auth, sales_finance], async (req, res)=>{
+    const sql = `SELECT JSON_ARRAYAGG(p_banks.bank_id) AS "bank_id", JSON_ARRAYAGG(p_banks.bank_desc) AS "bank_desc" FROM p_banks GROUP BY p_banks.bank_desc;`
+    const {id} = req.params;
+    const promisePool = pool.promise();
+
+    try {
+        const result = await promisePool.query(sql, [id]);
+
+        res.status(200).json({
+            ok: true,
+            result: result[0]
+        });
+        
+    } catch (error) {
+        console.log(error.message)
+        res.status(500).send({
+            ok: false, 
+            result: 'Not sure what happened :('
+        })
+    }
+
+})
+
 module.exports = router;

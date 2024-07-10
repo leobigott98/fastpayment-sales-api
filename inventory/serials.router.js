@@ -72,6 +72,8 @@ router.post("/all", [auth, sales], async (req, res)=>{
     const promisePool = pool.promise();
     const {product_id} = req.body;
 
+    console.log(product_id)
+
     try {
         const result = await promisePool.query('CALL sp_get_serials(?)', [product_id]);
 
