@@ -44,7 +44,7 @@ router.post("", [auth, sales_finance], async (req, res)=>{
             v_pay_amount} = req.body;
     
     try {
-        const result = await promisePool.query('CALL sp_register_pay(?,?,?,?,?,?)', [user_id, v_sale_id, v_ops_id, v_bank_id, v_pay_ref, v_pay_amount]);
+        const result = await promisePool.query('CALL sp_register_pay_v1(?,?,?,?,?,?)', [user_id, v_sale_id, v_ops_id, v_bank_id, v_pay_ref, v_pay_amount]);
 
         res.status(200).json({
             ok: true,
