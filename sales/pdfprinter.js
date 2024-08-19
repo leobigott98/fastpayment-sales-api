@@ -127,7 +127,7 @@ const docDefinition = {
     {
       columns: [
         {
-          image: "../API/images/LogotipoFastPayment-03.png",
+          image: "images/LogotipoFastPayment-03.png",
           width: 120,
           height: 60 
         },
