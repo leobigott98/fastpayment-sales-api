@@ -365,7 +365,7 @@ const editCustomer = async (req, res) => {
 };
 
 // Create tranred terminal in mysql db
-const createTerminalInDB = async (element, term_tranred) => {
+const createTerminalInDB = async (element, term_tranred, req) => {
   const promisePool = pool.promise();
 
   const {user_id} = req.user
@@ -381,7 +381,7 @@ const createTerminalInDB = async (element, term_tranred) => {
       return true;
     }
   } catch (error) {
-    console.log(error, message);
+    console.log(error);
     return false;
   }
 };
@@ -433,7 +433,7 @@ const newTerminal = async (
         ]);
         if (response.ok) {
           const term_tranred = json.terminal;
-          if (createTerminalInDB(terminalArray[index], term_tranred)) {
+          if (createTerminalInDB(terminalArray[index], term_tranred, req)) {
             console.log("created in MySQL");
             console.log(json);
           } else {
@@ -443,7 +443,17 @@ const newTerminal = async (
           console.log("had to perform login");
           if (success) {
             tranredLogin(success, () => {
-              return createTerminal(req, res);
+              return newTerminal(
+                success,
+                error,
+                terminalArray,
+                index,
+                res,
+                row,
+                responseArray,
+                promisePool,
+                req
+              );
             });
           } else {
             error = true;
@@ -506,7 +516,8 @@ const createTerminal = async (req, res) => {
             res,
             row,
             responseArray,
-            promisePool
+            promisePool,
+            req
           );
         }
       });

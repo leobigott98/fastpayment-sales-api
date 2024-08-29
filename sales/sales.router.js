@@ -258,7 +258,7 @@ router.get("/pdf/:id", [auth, sales], async (req, res)=>{
                 html: html, // html body,
                 attachments: {   // stream as an attachment
                     filename: `Cotización_Fastpayment_${sale_serie}.pdf`,
-                    content: fs.createReadStream(`../API/sales/docs/CotizacionFastPayment-${sale_serie}.pdf`)
+                    content: fs.createReadStream(`sales/docs/CotizacionFastPayment-${sale_serie}.pdf`)
                 },
                 });
             

@@ -299,7 +299,7 @@ const pdfDoc = printer.createPdfKitDocument(docDefinition, {
 });
 
 // Writing it to disk
-pdfDoc.pipe(fs.createWriteStream(`../API/sales/docs/CotizacionFastPayment-${sale_serie}.pdf`));
+pdfDoc.pipe(fs.createWriteStream(`sales/docs/CotizacionFastPayment-${sale_serie}.pdf`));
 pdfDoc.end();
 
 }
