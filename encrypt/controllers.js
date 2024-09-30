@@ -1,4 +1,7 @@
-const aes256 = require('aes256')
+const aes256 = require('aes256');
+const NodeRSA = require('node-rsa');
+const fs = require('fs');
+const publicKey = fs.readFileSync('./certs/ccr_publicKey.pem', 'utf8')
 
 const aes256Encrypt = async(req, res)=>{
     try{
@@ -24,4 +27,16 @@ const aes256Encrypt = async(req, res)=>{
 
 }
 
-module.exports = {aes256Encrypt}
+const rsaEncrypt = (req, res)=>{
+    try {
+        const {input} = req.body;
+        const key = new NodeRSA(publicKey);
+        const encrypted = key.encrypt(input, 'base64');
+        res.status(200).json({message: 'success', encrypted: encrypted});
+        
+    } catch (err) {
+        res.status(400).json({message: err.message}) 
+    }
+}
+
+module.exports = {aes256Encrypt, rsaEncrypt}
