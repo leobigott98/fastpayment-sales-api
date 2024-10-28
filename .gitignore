@@ -117,4 +117,7 @@ dist
 .yarn/install-state.gz
 .pnp.*
 
+# public keys and certificates
+certs
+
 # End of https://mrkandreev.name/snippets/gitignore-generator/#Node
