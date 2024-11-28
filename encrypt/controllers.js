@@ -4,30 +4,25 @@ const fs = require('fs');
 const publicKey = fs.readFileSync('./certs/ccr_publicKey.pem', 'utf8');
 const crypto = require('crypto');
 
-// Function to generate a random Double-Length (112-bit effective) 3DES key (16 bytes total)
+// Function to generate a random Double Length (112-bit) 3DES key
 function generateDoubleLength3DESKey() {
-    // Double-length 3DES uses two 64-bit DES keys (112 bits effective security).
-    // We generate 16 bytes to include parity bits (8 bytes per DES key).
-    const key = crypto.randomBytes(16); // 16 bytes (128 bits with parity)
+    // 3DES uses two 64-bit keys, but only 56 bits of each are used (due to parity bits)
+    // We need to generate 112 bits (14 bytes)
+    const key = crypto.randomBytes(16); // 112 bits = 14 bytes
     return key;
 };
 
-// Function to generate a KCV (Key Check Value)from a 3DES key
-function generateKCV(desKey) {
-    // Encrypt 8 bytes of 0x00 with 3DES using the KEK
-    const iv = Buffer.alloc(8, 0); // Initialization vector of all zeros
-
+// Function to generate KCV (Key Check Value)
+function generateKCV(key) {
     // Create a DES-EDE cipher in ECB mode using the key
-    const cipher = crypto.createCipheriv('des-ede-cbc', desKey, iv);
-
+    const cipher = crypto.createCipheriv('des-ede', key, null);
+  
     // Encrypt 8 bytes of zeros
-    const encrypted = cipher.update(Buffer.alloc(8, 0));
-
-    cipher.final(); // Complete the encryption
-
-    // Return the first 3 bytes of the encrypted result as the KCV
+    const encrypted = cipher.update(Buffer.alloc(8, 0x00));
+  
+    // KCV is the first 3 bytes (6 hex digits) of the encrypted result
     return encrypted.slice(0, 3).toString('hex');
-}
+};
 
 const aes256Encrypt = async(req, res)=>{
     try{
@@ -39,8 +34,31 @@ const aes256Encrypt = async(req, res)=>{
         res.status(400).json({message: err.message})
     }
 
+/*     const key = process.env.CCR_KEY
+    const user = process.env.CCR_USER
+    const password = process.env.CCR_PASS
+
+    const encryptedUser = aes256.encrypt(key, user)
+    const encryptedPassword = aes256.encrypt(key, password)
+
+    const parameters = {
+        usuario: encryptedUser,
+        password: encryptedPassword
+} */
+
 }
 
+/* const rsaEncrypt = (req, res)=>{
+    try {
+        const {input} = req.body;
+        const key = new NodeRSA(publicKey);
+        const encrypted = key.encrypt(input, 'base64');
+        res.status(200).json({message: 'success', encrypted: encrypted});
+        
+    } catch (err) {
+        res.status(400).json({message: err.message}) 
+    }
+} */
 
 const generateKEK = (req, res) => {
 
@@ -55,9 +73,7 @@ const generateKEK = (req, res) => {
     }
 };
 
-const remoteKeyRsaEncrypt = (req, res) => { 
-    // Load the public key in PEM format
-    const publicKeyPem = fs.readFileSync('test_public_key.pem', 'utf8');
+const remoteKeyRsaEncrypt = (req, res)=>{
 
     try {
         const header = process.env.CCR_KEK_HEADER;
@@ -66,42 +82,23 @@ const remoteKeyRsaEncrypt = (req, res) => {
         const constantValue1 = process.env.CCR_KEK_CONSTANT_VALUE_1;
         const constantValue2 = process.env.CCR_KEK_CONSTANT_VALUE_2;
         const initVector = process.env.CCR_KEK_INIT_VECTOR;
-
         const prefix = header + constantValue0 + derEncoding;
         const sufix = constantValue1 + constantValue2 + initVector;
         const desKey = generateDoubleLength3DESKey();
         const kcv = generateKCV(desKey);
-
-        // Concatenate data
         const toEncrypt = prefix + desKey.toString('hex') + sufix;
-        console.log('Data to encrypt (hex):', toEncrypt);
-        console.log('Data to encrypt length:', toEncrypt.length);
-
-        // Convert to binary buffer
-        const binaryInput = Buffer.from(toEncrypt, 'hex');
-        if (binaryInput.length !== 256) {
-            throw new Error(`Data to encrypt must be 256 bytes, but got ${binaryInput.length} bytes`);
-        }
-
-        // Encrypt with RSA
-        const encrypted = crypto.publicEncrypt(
-            {
-                key: publicKeyPem,
-                padding: crypto.constants.RSA_NO_PADDING,
-            },
-            binaryInput
-        );
-
-        console.log('Encrypted text length:', encrypted.length);
-        res.status(200).json({ 
-            message: 'success', 
-            kek: desKey.toString('hex'), 
-            kcv: kcv.toUpperCase(), 
-            encryptedMessage: encrypted.toString('hex').toUpperCase() 
-        });  
+        const key = new NodeRSA();
+        console.log(toEncrypt);
+        key.importKey({
+            n: Buffer.from(process.env.CCR_RSA_PUBLIC_KEY, 'hex'),
+            e: 65537,
+        }, 'components-public');
+        //const encrypted = crypto.publicEncrypt()
+        const encryptedHex = key.encrypt(toEncrypt, 'hex');
+        res.status(200).json({message: 'success', kek: desKey.toString('hex'), kcv: kcv, encryptedMessage: encryptedHex});
+        
     } catch (err) {
-        console.error('Encryption error:', err.message);
-        res.status(500).json({ message: err.message }); 
+        res.status(500).json({message: err.message}) 
     }
 };
 
