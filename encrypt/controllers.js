@@ -55,7 +55,7 @@ const generateKEK = (req, res) => {
 
 const remoteKeyRsaEncrypt = (req, res) => { 
     // Load the public key in PEM format
-    const publicKeyPem = fs.readFileSync('../certs/test_public_key.pem', 'utf8');
+    const publicKeyPem = fs.readFileSync('./certs/test_public_key.pem', 'utf8');
 
     try {
         const header = process.env.CCR_KEK_HEADER;
