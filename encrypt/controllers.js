@@ -58,6 +58,7 @@ const remoteKeyRsaEncrypt = (req, res) => {
     const publicKeyPem = fs.readFileSync('./certs/test_public_key.pem', 'utf8');
 
     try {
+        // Data to concatenate the KEK with 
         const header = process.env.CCR_KEK_HEADER;
         const constantValue0 = process.env.CCR_KEK_CONSTANT_VALUE_0;
         const derEncoding = process.env.CCR_KEK_DER_ENCODING;
@@ -69,9 +70,11 @@ const remoteKeyRsaEncrypt = (req, res) => {
         const sufix = constantValue1 + constantValue2 + initVector;
         const desKey = generateDoubleLength3DESKey();
         const kcv = generateKCV(desKey);
+        
 
         // Concatenate data
         const toEncrypt = prefix + desKey.toString('hex') + sufix;
+        //const toEncrypt = '0002E2709F1B6394ACFA5DBB0DC979973955B855E1457D2466CDAB79B1EE9F04163CBFCB2911B02FF3BFEA593D4826B4368EDD09F84C1591465B89F17A67EBB5BF74799D2EF0CAB0BB2457CA2315084A58D8C8E2F50970FCD2C74D6FF7CCD73E692A310A5E1C8664ADF3D5FE448FB2C457DE7370ABC22F59ED57284CB4CE84493F78C61B3ED59C1185A3E10BD69F83F68FD2FDF6F5CD648C82A7E83B966635503A874EBC6D6CA34876E6DC38813D80C313F391A3056C7A091234C667DFC2A07A7311C9BCAEDC9003CC0F0FE33FC7D8D40A581B351D0664EBF71F67C4190862DB9F00301C0410BB043F3570A15C94C68AB7CD257380AD04080000000000000000'
         console.log('Data to encrypt (hex):', toEncrypt);
         console.log('Data to encrypt length:', toEncrypt.length);
 
